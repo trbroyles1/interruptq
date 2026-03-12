@@ -42,8 +42,7 @@ export function ActivityInput({ onSubmit }: ActivityInputProps) {
       const beforeCursor = value.slice(0, cursorPos);
       const afterCursor = value.slice(cursorPos);
       const atIndex = beforeCursor.lastIndexOf("@");
-      const newValue =
-        beforeCursor.slice(0, atIndex) + `@${tagName} ` + afterCursor;
+      const newValue = beforeCursor.slice(0, atIndex) + `@${tagName} ` + afterCursor;
       setValue(newValue);
       setShowSuggestions(false);
       setTagQuery(null);
@@ -55,7 +54,7 @@ export function ActivityInput({ onSubmit }: ActivityInputProps) {
         inputRef.current?.setSelectionRange(newCursorPos, newCursorPos);
       }, 0);
     },
-    [value]
+    [value],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -107,7 +106,7 @@ export function ActivityInput({ onSubmit }: ActivityInputProps) {
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        placeholder="What are you working on? (e.g., TIK-789 @Dylan bugfix)"
+        placeholder="What are you working on? (e.g., TIK-789 @Mark bugfix)"
         className="h-12 text-lg bg-card border-border"
         autoFocus
       />
@@ -116,9 +115,7 @@ export function ActivityInput({ onSubmit }: ActivityInputProps) {
           {tags.map((tag, i) => (
             <button
               key={tag}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-accent ${
-                i === selectedIndex ? "bg-accent" : ""
-              }`}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-accent ${i === selectedIndex ? "bg-accent" : ""}`}
               onMouseDown={(e) => {
                 e.preventDefault();
                 insertTag(tag);
