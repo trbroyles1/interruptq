@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { getEndOfWorkDay } from "@/lib/time";
+import { nowUTC } from "@/lib/timezone";
 import type { Activity, Preferences } from "@/types";
 
 export function useAutoBreak(
@@ -14,6 +15,8 @@ export function useAutoBreak(
   useEffect(() => {
     if (!preferences || !latestActivity) return;
 
+    const tz = preferences.timezone ?? "America/New_York";
+
     const check = () => {
       if (creatingRef.current) return;
 
@@ -21,7 +24,8 @@ export function useAutoBreak(
       if (latestActivity.classification === "break") return;
 
       const now = new Date();
-      const endOfDay = getEndOfWorkDay(now, preferences.workingHours);
+      const currentUTC = nowUTC();
+      const endOfDay = getEndOfWorkDay(currentUTC, preferences.workingHours, tz);
 
       // Non-working day or still within working hours
       if (!endOfDay || now <= endOfDay) return;

@@ -45,6 +45,9 @@ export const PUT = withIdentity(async (request: Request, identityId: number) => 
   if (body.weekStartDay !== undefined) {
     updates.weekStartDay = body.weekStartDay;
   }
+  if (body.timezone !== undefined) {
+    updates.timezone = body.timezone;
+  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });

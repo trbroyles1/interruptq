@@ -1,12 +1,19 @@
 import type { WorkingHours, DayOfWeek } from "@/types";
+import {
+  toZonedParts,
+  toZonedDateStr,
+  utcForTimeInTz,
+  dayBoundsUTC,
+} from "@/lib/timezone";
 
 const DAY_MAP: DayOfWeek[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 /**
- * Get the DayOfWeek key for a Date object.
+ * Get the DayOfWeek key for a UTC ISO timestamp in the given timezone.
  */
-export function getDayOfWeek(date: Date): DayOfWeek {
-  return DAY_MAP[date.getDay()];
+export function getDayOfWeek(utcISO: string, tz: string): DayOfWeek {
+  const parts = toZonedParts(utcISO, tz);
+  return DAY_MAP[parts.dayOfWeek];
 }
 
 /**
@@ -19,91 +26,101 @@ export function parseTimeToMinutes(time: string): number {
 
 /**
  * Compute the effective duration (in minutes) of an activity block,
- * trimmed to working hours.
+ * trimmed to working hours in the user's timezone.
  *
- * @param start - ISO datetime string when this activity began
- * @param end - ISO datetime string when the next activity began (or end of day)
+ * @param start - UTC ISO datetime string when this activity began
+ * @param end - UTC ISO datetime string when the next activity began (or now)
  * @param workingHours - the user's working hours config
+ * @param tz - IANA timezone identifier
  */
 export function computeBlockDuration(
   start: string,
   end: string,
-  workingHours: WorkingHours
+  workingHours: WorkingHours,
+  tz: string
 ): number {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+  const startMs = new Date(start).getTime();
+  const endMs = new Date(end).getTime();
 
-  if (endDate <= startDate) return 0;
+  if (endMs <= startMs) return 0;
 
   let totalMinutes = 0;
 
-  // Iterate day-by-day from start to end
-  const current = new Date(startDate);
-  current.setHours(0, 0, 0, 0);
+  // Determine the calendar day range in the user's timezone
+  const startDateStr = toZonedDateStr(start, tz);
+  const endDateStr = toZonedDateStr(end, tz);
 
-  while (current <= endDate) {
-    const dayKey = getDayOfWeek(current);
+  // Iterate through each calendar day in the user's timezone
+  let currentDateStr = startDateStr;
+
+  while (currentDateStr <= endDateStr) {
+    // Get the day-of-week for this date in the user's timezone
+    const bounds = dayBoundsUTC(currentDateStr, tz);
+    const dayKey = getDayOfWeek(bounds.start, tz);
     const schedule = workingHours[dayKey];
 
     if (schedule.enabled) {
-      const dayStart = new Date(current);
-      const [sh, sm] = schedule.start.split(":").map(Number);
-      dayStart.setHours(sh, sm, 0, 0);
+      // Get UTC instants for working hours start/end on this day
+      const workStartMs = new Date(utcForTimeInTz(currentDateStr, schedule.start, tz)).getTime();
+      const workEndMs = new Date(utcForTimeInTz(currentDateStr, schedule.end, tz)).getTime();
 
-      const dayEnd = new Date(current);
-      const [eh, em] = schedule.end.split(":").map(Number);
-      dayEnd.setHours(eh, em, 0, 0);
-
-      // Overlap of [start, end] with [dayStart, dayEnd]
-      const overlapStart = new Date(Math.max(startDate.getTime(), dayStart.getTime()));
-      const overlapEnd = new Date(Math.min(endDate.getTime(), dayEnd.getTime()));
+      // Overlap of [start, end] with [workStart, workEnd]
+      const overlapStart = Math.max(startMs, workStartMs);
+      const overlapEnd = Math.min(endMs, workEndMs);
 
       if (overlapEnd > overlapStart) {
-        totalMinutes += (overlapEnd.getTime() - overlapStart.getTime()) / 60000;
+        totalMinutes += (overlapEnd - overlapStart) / 60000;
       }
     }
 
-    // Move to next day
-    current.setDate(current.getDate() + 1);
+    // Advance to next calendar day
+    currentDateStr = nextDateStr(currentDateStr);
   }
 
   return Math.round(totalMinutes * 100) / 100;
 }
 
 /**
- * Get the end-of-working-day timestamp for a given date.
- * Returns null if the day is not a working day.
+ * Advance a "YYYY-MM-DD" string by one day.
  */
-export function getEndOfWorkDay(
-  date: Date,
-  workingHours: WorkingHours
-): Date | null {
-  const dayKey = getDayOfWeek(date);
-  const schedule = workingHours[dayKey];
-
-  if (!schedule.enabled) return null;
-
-  const endOfDay = new Date(date);
-  const [eh, em] = schedule.end.split(":").map(Number);
-  endOfDay.setHours(eh, em, 0, 0);
-  return endOfDay;
+function nextDateStr(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().split("T")[0];
 }
 
 /**
- * Get the start-of-working-day timestamp for a given date.
- * Returns null if the day is not a working day.
+ * Get the end-of-working-day as a UTC Date for a given UTC ISO timestamp
+ * in the user's timezone. Returns null if the day is not a working day.
  */
-export function getStartOfWorkDay(
-  date: Date,
-  workingHours: WorkingHours
+export function getEndOfWorkDay(
+  utcISO: string,
+  workingHours: WorkingHours,
+  tz: string
 ): Date | null {
-  const dayKey = getDayOfWeek(date);
+  const dateStr = toZonedDateStr(utcISO, tz);
+  const dayKey = getDayOfWeek(utcISO, tz);
   const schedule = workingHours[dayKey];
 
   if (!schedule.enabled) return null;
 
-  const startOfDay = new Date(date);
-  const [sh, sm] = schedule.start.split(":").map(Number);
-  startOfDay.setHours(sh, sm, 0, 0);
-  return startOfDay;
+  return new Date(utcForTimeInTz(dateStr, schedule.end, tz));
+}
+
+/**
+ * Get the start-of-working-day as a UTC Date for a given UTC ISO timestamp
+ * in the user's timezone. Returns null if the day is not a working day.
+ */
+export function getStartOfWorkDay(
+  utcISO: string,
+  workingHours: WorkingHours,
+  tz: string
+): Date | null {
+  const dateStr = toZonedDateStr(utcISO, tz);
+  const dayKey = getDayOfWeek(utcISO, tz);
+  const schedule = workingHours[dayKey];
+
+  if (!schedule.enabled) return null;
+
+  return new Date(utcForTimeInTz(dateStr, schedule.start, tz));
 }

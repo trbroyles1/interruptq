@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -182,6 +182,12 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
             </select>
           </div>
 
+          {/* Timezone */}
+          <TimezoneSelect
+            value={preferences.timezone}
+            onChange={(tz) => onSave({ timezone: tz })}
+          />
+
           <Separator />
 
           {/* Disconnect */}
@@ -229,5 +235,80 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+// Common timezones shown at the top of the list for quick access
+const COMMON_TIMEZONES = [
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Anchorage",
+  "Pacific/Honolulu",
+  "America/Toronto",
+  "America/Vancouver",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Asia/Tokyo",
+  "Asia/Shanghai",
+  "Asia/Kolkata",
+  "Australia/Sydney",
+  "Pacific/Auckland",
+];
+
+function TimezoneSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (tz: string) => void;
+}) {
+  const [filter, setFilter] = useState("");
+
+  const allTimezones = useMemo(() => {
+    try {
+      return Intl.supportedValuesOf("timeZone");
+    } catch {
+      return COMMON_TIMEZONES;
+    }
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!filter) return COMMON_TIMEZONES;
+    const lower = filter.toLowerCase();
+    return allTimezones.filter((tz) => tz.toLowerCase().includes(lower));
+  }, [filter, allTimezones]);
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-semibold">Timezone</Label>
+      <Input
+        type="text"
+        placeholder="Search timezones..."
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        className="h-8 text-sm"
+      />
+      <select
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setFilter("");
+        }}
+        className="h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
+        size={Math.min(8, filtered.length)}
+      >
+        {filtered.map((tz) => (
+          <option key={tz} value={tz}>
+            {tz.replace(/_/g, " ")}
+          </option>
+        ))}
+      </select>
+      <p className="text-xs text-muted-foreground">
+        Current: {value.replace(/_/g, " ")}
+      </p>
+    </div>
   );
 }

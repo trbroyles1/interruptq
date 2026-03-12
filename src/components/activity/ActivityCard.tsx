@@ -10,6 +10,7 @@ interface ActivityCardProps {
   durationMinutes: number;
   tickets: string[];
   tags: string[];
+  timezone?: string;
 }
 
 export function ActivityCard({
@@ -19,10 +20,12 @@ export function ActivityCard({
   durationMinutes,
   tickets,
   tags,
+  timezone,
 }: ActivityCardProps) {
   const time = new Date(timestamp).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
+    ...(timezone ? { timeZone: timezone } : {}),
   });
 
   const duration =

@@ -5,6 +5,7 @@ import {
   sprintGoalSnapshots,
   prioritySnapshots,
   onCallChanges,
+  preferences,
 } from "@/db/schema";
 import { ensureDb } from "@/db/init";
 import { eq, and, isNull, desc } from "drizzle-orm";
@@ -75,11 +76,22 @@ export async function GET(
     .limit(1)
     .get();
 
+  // Owner's timezone
+  const prefs = db
+    .select()
+    .from(preferences)
+    .where(eq(preferences.identityId, identityId))
+    .get();
+  const timezone = prefs?.timezone ?? "America/New_York";
+  const weekStartDay = prefs?.weekStartDay ?? 1;
+
   return NextResponse.json({
     sprint: sprint ?? null,
     goals,
     priorities,
     isOnCall: latestOnCall?.status ?? false,
     expiresAt: link.expiresAt,
+    timezone,
+    weekStartDay,
   });
 }

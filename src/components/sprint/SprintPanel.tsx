@@ -13,15 +13,17 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import type { Sprint } from "@/types";
+import { todayInTz } from "@/lib/timezone";
 
 interface SprintPanelProps {
   sprint: Sprint | null;
+  timezone: string;
   onCutover: (date?: string) => Promise<void>;
 }
 
-export function SprintPanel({ sprint, onCutover }: SprintPanelProps) {
+export function SprintPanel({ sprint, timezone, onCutover }: SprintPanelProps) {
   const [cutoverDate, setCutoverDate] = useState(
-    new Date().toISOString().split("T")[0]
+    todayInTz(timezone)
   );
   const [loading, setLoading] = useState(false);
 

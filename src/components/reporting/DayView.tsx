@@ -10,9 +10,10 @@ interface DayViewProps {
     onCallTicketMinutes?: number;
     goalProgress?: { goal: string; minutes: number }[];
   };
+  timezone?: string;
 }
 
-export function DayView({ metrics }: DayViewProps) {
+export function DayView({ metrics, timezone }: DayViewProps) {
   const [mode, setMode] = useState<"timeline" | "aggregate">("timeline");
 
   const dayActivities =
@@ -47,7 +48,7 @@ export function DayView({ metrics }: DayViewProps) {
       </div>
 
       {mode === "timeline" ? (
-        <TimelineView activities={dayActivities} />
+        <TimelineView activities={dayActivities} timezone={timezone} />
       ) : (
         <AggregateView metrics={metrics} />
       )}
@@ -57,8 +58,10 @@ export function DayView({ metrics }: DayViewProps) {
 
 function TimelineView({
   activities,
+  timezone,
 }: {
   activities: { text: string; classification: string; timestamp: string; durationMinutes: number }[];
+  timezone?: string;
 }) {
   if (activities.length === 0) {
     return (
@@ -77,6 +80,7 @@ function TimelineView({
         const time = new Date(a.timestamp).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
+          ...(timezone ? { timeZone: timezone } : {}),
         });
         const colorClass =
           a.classification === "green"

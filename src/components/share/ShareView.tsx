@@ -12,6 +12,8 @@ interface ShareViewProps {
   priorities: PriorityItem[];
   isOnCall: boolean;
   expiresAt: string | null;
+  timezone: string;
+  weekStartDay: number;
 }
 
 export function ShareView({
@@ -21,6 +23,8 @@ export function ShareView({
   priorities,
   isOnCall,
   expiresAt,
+  timezone,
+  weekStartDay,
 }: ShareViewProps) {
   return (
     <div className="flex flex-col h-screen">
@@ -109,7 +113,7 @@ export function ShareView({
         {/* Report area */}
         <main className="flex-1 overflow-hidden">
           <ScrollArea className="h-full p-4">
-            <ShareReportingPanel shareId={shareId} sprint={sprint} />
+            <ShareReportingPanel shareId={shareId} sprint={sprint} timezone={timezone} weekStartDay={weekStartDay} />
           </ScrollArea>
         </main>
       </div>

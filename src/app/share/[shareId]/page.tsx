@@ -11,7 +11,7 @@ export default function SharePage({
   params: Promise<{ shareId: string }>;
 }) {
   const { shareId } = use(params);
-  const { sprint, goals, priorities, isOnCall, expiresAt, isLoading, isExpired } =
+  const { sprint, goals, priorities, isOnCall, expiresAt, timezone, weekStartDay, isLoading, isExpired } =
     useShareData(shareId);
 
   if (isLoading) {
@@ -34,6 +34,8 @@ export default function SharePage({
       priorities={priorities}
       isOnCall={isOnCall}
       expiresAt={expiresAt}
+      timezone={timezone}
+      weekStartDay={weekStartDay}
     />
   );
 }

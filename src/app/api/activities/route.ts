@@ -15,9 +15,50 @@ import { parseEntry } from "@/lib/parse";
 import { classify } from "@/lib/classify";
 import { computeBlockDuration } from "@/lib/time";
 import { withIdentity } from "@/lib/auth";
+import { dayBoundsUTC, todayInTz, nowUTC } from "@/lib/timezone";
 import type { Classification, PriorityItem, WorkingHours } from "@/types";
 
 ensureDb();
+
+/**
+ * Helper: fetch activities within UTC bounds.
+ * Also returns the prior activity (last before range start) separately —
+ * it's needed for computing the first in-range activity's duration but
+ * should NOT be displayed in the timeline.
+ */
+function fetchActivitiesInRange(
+  identityId: number,
+  rangeStart: string,
+  rangeEnd: string
+) {
+  const rows = db
+    .select()
+    .from(activities)
+    .where(
+      and(
+        eq(activities.identityId, identityId),
+        gte(activities.timestamp, rangeStart),
+        lte(activities.timestamp, rangeEnd)
+      )
+    )
+    .orderBy(activities.timestamp)
+    .all();
+
+  const prior = db
+    .select()
+    .from(activities)
+    .where(
+      and(
+        eq(activities.identityId, identityId),
+        lte(activities.timestamp, rangeStart)
+      )
+    )
+    .orderBy(desc(activities.timestamp))
+    .limit(1)
+    .get();
+
+  return { rows, prior: prior && !rows.find((r) => r.id === prior.id) ? prior : null };
+}
 
 export const GET = withIdentity(async (request: Request, identityId: number) => {
   const { searchParams } = new URL(request.url);
@@ -25,107 +66,7 @@ export const GET = withIdentity(async (request: Request, identityId: number) => 
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  let rows;
-  if (date) {
-    const dayStart = `${date}T00:00:00`;
-    const dayEnd = `${date}T23:59:59`;
-    rows = db
-      .select()
-      .from(activities)
-      .where(
-        and(
-          eq(activities.identityId, identityId),
-          gte(activities.timestamp, dayStart),
-          lte(activities.timestamp, dayEnd)
-        )
-      )
-      .orderBy(activities.timestamp)
-      .all();
-
-    const prior = db
-      .select()
-      .from(activities)
-      .where(
-        and(
-          eq(activities.identityId, identityId),
-          lte(activities.timestamp, dayStart)
-        )
-      )
-      .orderBy(desc(activities.timestamp))
-      .limit(1)
-      .get();
-
-    if (prior && !rows.find((r) => r.id === prior.id)) {
-      rows = [prior, ...rows];
-    }
-  } else if (from && to) {
-    const rangeStart = `${from}T00:00:00`;
-    const rangeEnd = `${to}T23:59:59`;
-    rows = db
-      .select()
-      .from(activities)
-      .where(
-        and(
-          eq(activities.identityId, identityId),
-          gte(activities.timestamp, rangeStart),
-          lte(activities.timestamp, rangeEnd)
-        )
-      )
-      .orderBy(activities.timestamp)
-      .all();
-
-    const prior = db
-      .select()
-      .from(activities)
-      .where(
-        and(
-          eq(activities.identityId, identityId),
-          lte(activities.timestamp, rangeStart)
-        )
-      )
-      .orderBy(desc(activities.timestamp))
-      .limit(1)
-      .get();
-
-    if (prior && !rows.find((r) => r.id === prior.id)) {
-      rows = [prior, ...rows];
-    }
-  } else {
-    const today = new Date().toISOString().split("T")[0];
-    const dayStart = `${today}T00:00:00`;
-    const dayEnd = `${today}T23:59:59`;
-    rows = db
-      .select()
-      .from(activities)
-      .where(
-        and(
-          eq(activities.identityId, identityId),
-          gte(activities.timestamp, dayStart),
-          lte(activities.timestamp, dayEnd)
-        )
-      )
-      .orderBy(activities.timestamp)
-      .all();
-
-    const prior = db
-      .select()
-      .from(activities)
-      .where(
-        and(
-          eq(activities.identityId, identityId),
-          lte(activities.timestamp, dayStart)
-        )
-      )
-      .orderBy(desc(activities.timestamp))
-      .limit(1)
-      .get();
-
-    if (prior && !rows.find((r) => r.id === prior.id)) {
-      rows = [prior, ...rows];
-    }
-  }
-
-  // Get working hours for duration computation
+  // Fetch preferences first — needed for timezone and working hours
   const prefs = db
     .select()
     .from(preferences)
@@ -134,16 +75,34 @@ export const GET = withIdentity(async (request: Request, identityId: number) => 
   const workingHours: WorkingHours = prefs
     ? JSON.parse(prefs.workingHours)
     : null;
+  const tz = prefs?.timezone ?? "America/New_York";
 
-  // Compute durations
-  const withDuration = rows.map((row, i) => {
-    const nextRow = rows[i + 1];
-    const endTime = nextRow
-      ? nextRow.timestamp
-      : new Date().toISOString();
+  let result;
+  if (date) {
+    const bounds = dayBoundsUTC(date, tz);
+    result = fetchActivitiesInRange(identityId, bounds.start, bounds.end);
+  } else if (from && to) {
+    const rangeStart = dayBoundsUTC(from, tz).start;
+    const rangeEnd = dayBoundsUTC(to, tz).end;
+    result = fetchActivitiesInRange(identityId, rangeStart, rangeEnd);
+  } else {
+    const today = todayInTz(tz);
+    const bounds = dayBoundsUTC(today, tz);
+    result = fetchActivitiesInRange(identityId, bounds.start, bounds.end);
+  }
+
+  const { rows, prior } = result;
+  // Build full list with prior prepended (for duration computation only)
+  const allRows = prior ? [prior, ...rows] : rows;
+
+  // Compute durations using the full list (prior provides end boundary for first row)
+  const now = nowUTC();
+  const withDuration = allRows.map((row, i) => {
+    const nextRow = allRows[i + 1];
+    const endTime = nextRow ? nextRow.timestamp : now;
 
     const durationMinutes = workingHours
-      ? computeBlockDuration(row.timestamp, endTime, workingHours)
+      ? computeBlockDuration(row.timestamp, endTime, workingHours, tz)
       : 0;
 
     return {
@@ -155,7 +114,10 @@ export const GET = withIdentity(async (request: Request, identityId: number) => 
     };
   });
 
-  return NextResponse.json(withDuration);
+  // Exclude the prior activity from the response — it's only needed for duration math
+  const response = prior ? withDuration.slice(1) : withDuration;
+
+  return NextResponse.json(response);
 });
 
 export const POST = withIdentity(async (request: Request, identityId: number) => {
@@ -182,7 +144,7 @@ export const POST = withIdentity(async (request: Request, identityId: number) =>
     return NextResponse.json({ error: "Text required" }, { status: 400 });
   }
 
-  const now = body.timestamp || new Date().toISOString();
+  const now = body.timestamp || nowUTC();
 
   // Get current sprint
   const currentSprint = db

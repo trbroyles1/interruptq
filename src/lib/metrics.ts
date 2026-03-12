@@ -1,4 +1,5 @@
 import type { ActivityWithDuration, Classification, WorkingHours } from "@/types";
+import { toZonedDateStr } from "@/lib/timezone";
 
 export interface DayMetrics {
   date: string;
@@ -47,7 +48,8 @@ export interface RangeMetrics {
  * Compute all derived metrics for a set of activities (already with durations).
  */
 export function computeMetrics(
-  activities: ActivityWithDuration[]
+  activities: ActivityWithDuration[],
+  tz: string
 ): RangeMetrics {
   const sorted = [...activities].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -79,7 +81,7 @@ export function computeMetrics(
   const dayFirstEntries = new Set<string>();
   let totalContextSwitches = 0;
   for (const a of nonBreakSorted) {
-    const day = a.timestamp.split("T")[0];
+    const day = toZonedDateStr(a.timestamp, tz);
     if (dayFirstEntries.has(day)) {
       totalContextSwitches++;
     } else {
@@ -201,7 +203,7 @@ export function computeMetrics(
   // Daily breakdown
   const dayMap = new Map<string, ActivityWithDuration[]>();
   for (const a of sorted) {
-    const day = a.timestamp.split("T")[0];
+    const day = toZonedDateStr(a.timestamp, tz);
     if (!dayMap.has(day)) dayMap.set(day, []);
     dayMap.get(day)!.push(a);
   }

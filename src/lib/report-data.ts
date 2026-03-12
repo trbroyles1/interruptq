@@ -10,6 +10,7 @@ import {
 import { eq, and, gte, lte, desc, isNull } from "drizzle-orm";
 import { computeBlockDuration } from "@/lib/time";
 import { computeMetrics, type RangeMetrics } from "@/lib/metrics";
+import { dayBoundsUTC, nowUTC } from "@/lib/timezone";
 import type { WorkingHours } from "@/types";
 
 export interface ReportPayload extends RangeMetrics {
@@ -29,10 +30,27 @@ export function computeReportData(
   from: string,
   to: string
 ): { data: ReportPayload } | { error: string } {
-  const rangeStart = `${from}T00:00:00`;
-  const rangeEnd = `${to}T23:59:59`;
+  // Get working hours and timezone first (needed for query boundaries)
+  const prefs = db
+    .select()
+    .from(preferences)
+    .where(eq(preferences.identityId, identityId))
+    .get();
+  const workingHours: WorkingHours = prefs
+    ? JSON.parse(prefs.workingHours)
+    : null;
 
-  let rows = db
+  if (!workingHours) {
+    return { error: "No preferences" };
+  }
+
+  const tz = prefs?.timezone ?? "America/New_York";
+
+  // Compute timezone-aware UTC boundaries for the date range
+  const rangeStart = dayBoundsUTC(from, tz).start;
+  const rangeEnd = dayBoundsUTC(to, tz).end;
+
+  const rows = db
     .select()
     .from(activities)
     .where(
@@ -59,38 +77,31 @@ export function computeReportData(
     .limit(1)
     .get();
 
-  if (prior && !rows.find((r) => r.id === prior.id)) {
-    rows = [prior, ...rows];
-  }
-
-  // Get working hours
-  const prefs = db
-    .select()
-    .from(preferences)
-    .where(eq(preferences.identityId, identityId))
-    .get();
-  const workingHours: WorkingHours = prefs
-    ? JSON.parse(prefs.workingHours)
-    : null;
-
-  if (!workingHours) {
-    return { error: "No preferences" };
-  }
+  const hasPrior = prior && !rows.find((r) => r.id === prior.id);
+  // Build full list with prior prepended for duration computation only.
+  // The prior provides the end-boundary for computing the first in-range row's
+  // "time since last activity", but the prior itself is excluded from metrics.
+  const allRows = hasPrior ? [prior, ...rows] : rows;
 
   // Compute durations
-  const now = new Date().toISOString();
-  const withDuration = rows.map((row, i) => {
-    const nextRow = rows[i + 1];
+  const now = nowUTC();
+  const allWithDuration = allRows.map((row, i) => {
+    const nextRow = allRows[i + 1];
     const endTime = nextRow ? nextRow.timestamp : now;
+
     return {
       ...row,
       tickets: JSON.parse(row.tickets) as string[],
       tags: JSON.parse(row.tags) as string[],
-      durationMinutes: computeBlockDuration(row.timestamp, endTime, workingHours),
+      durationMinutes: computeBlockDuration(row.timestamp, endTime, workingHours, tz),
     };
   });
 
-  const metrics = computeMetrics(withDuration);
+  // Exclude the prior — its duration spans outside the requested range
+  // and including it inflates metrics with out-of-range working hours.
+  const withDuration = hasPrior ? allWithDuration.slice(1) : allWithDuration;
+
+  const metrics = computeMetrics(withDuration, tz);
 
   // Sprint-specific data
   const currentSprint = db

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityInput } from "@/components/activity/ActivityInput";
 import { CurrentActivity } from "@/components/activity/CurrentActivity";
 import { QuickPickGrid } from "@/components/activity/QuickPickGrid";
@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ReportingPanel } from "@/components/reporting/ReportingPanel";
 import { ShareLinkManager } from "@/components/share/ShareLinkManager";
+import { todayInTz } from "@/lib/timezone";
 
 export default function Home() {
   const { connected, isLoading: authLoading } = useAuth();
@@ -44,7 +45,15 @@ export default function Home() {
 }
 
 function AppView() {
-  const today = new Date().toISOString().split("T")[0];
+  const { preferences, updatePreferences } = usePreferences();
+
+  // Derive timezone-aware "today" — fall back to browser TZ while prefs load
+  const timezone = useMemo(
+    () => preferences?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+    [preferences?.timezone]
+  );
+  const today = useMemo(() => todayInTz(timezone), [timezone]);
+
   const { activities, createActivity, startBreak, mutate: mutateActivities } = useActivities(today);
   const {
     sprint,
@@ -57,7 +66,6 @@ function AppView() {
     setPriorities,
   } = useSprint();
   const { isOnCall, toggle: toggleOnCall } = useOnCall();
-  const { preferences, updatePreferences } = usePreferences();
   const { status: saveStatus, wrap } = useSaveStatus();
 
   const [activeView, setActiveView] = useState<"timeline" | "report">("timeline");
@@ -137,6 +145,7 @@ function AppView() {
             {/* Sprint Info */}
             <SprintPanel
               sprint={sprint}
+              timezone={timezone}
               onCutover={async (date) => {
                 await wrap(async () => {
                   await cutover(date);
@@ -185,6 +194,7 @@ function AppView() {
               text={currentActivity.text}
               classification={currentActivity.classification}
               startTime={currentActivity.timestamp}
+              timezone={timezone}
             />
           )}
         </div>
@@ -253,6 +263,7 @@ function AppView() {
                     durationMinutes={activity.durationMinutes}
                     tickets={activity.tickets}
                     tags={activity.tags}
+                    timezone={timezone}
                   />
                 ))}
               </div>
@@ -260,6 +271,7 @@ function AppView() {
               <ReportingPanel
                 sprint={sprint}
                 weekStartDay={preferences?.weekStartDay ?? 1}
+                timezone={timezone}
               />
             )}
           </ScrollArea>

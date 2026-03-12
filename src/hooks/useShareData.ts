@@ -20,6 +20,8 @@ export function useShareData(shareId: string) {
     priorities: data?.priorities ?? [],
     isOnCall: data?.isOnCall ?? false,
     expiresAt: data?.expiresAt ?? null,
+    timezone: data?.timezone ?? "America/New_York",
+    weekStartDay: data?.weekStartDay ?? 1,
     isLoading,
     isExpired: !!error,
   };

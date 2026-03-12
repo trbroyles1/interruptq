@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { useShareMetrics } from "@/hooks/useShareMetrics";
 import { AggregateView } from "@/components/reporting/DayView";
 import { MultiDayView } from "@/components/reporting/MultiDayView";
+import { todayInTz } from "@/lib/timezone";
 import type { Sprint } from "@/types";
 
 type Scope = "day" | "week" | "sprint" | "month" | "custom";
@@ -14,6 +15,7 @@ type Scope = "day" | "week" | "sprint" | "month" | "custom";
 interface ShareReportingPanelProps {
   shareId: string;
   sprint: Sprint | null;
+  timezone: string;
   weekStartDay?: number;
 }
 
@@ -45,9 +47,10 @@ function getMonthRange(date: Date) {
 export function ShareReportingPanel({
   shareId,
   sprint,
+  timezone,
   weekStartDay = 1,
 }: ShareReportingPanelProps) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayInTz(timezone);
   const [scope, setScope] = useState<Scope>("day");
   const [selectedDate, setSelectedDate] = useState(today);
   const [customFrom, setCustomFrom] = useState(today);

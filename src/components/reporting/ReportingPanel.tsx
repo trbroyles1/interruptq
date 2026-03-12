@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { useMetrics } from "@/hooks/useMetrics";
 import { DayView } from "./DayView";
 import { MultiDayView } from "./MultiDayView";
+import { todayInTz } from "@/lib/timezone";
 import type { Sprint } from "@/types";
 
 type Scope = "day" | "week" | "sprint" | "month" | "custom";
@@ -14,6 +15,7 @@ type Scope = "day" | "week" | "sprint" | "month" | "custom";
 interface ReportingPanelProps {
   sprint: Sprint | null;
   weekStartDay: number;
+  timezone: string;
 }
 
 function getWeekRange(date: Date, weekStartDay: number) {
@@ -41,8 +43,8 @@ function getMonthRange(date: Date) {
   };
 }
 
-export function ReportingPanel({ sprint, weekStartDay }: ReportingPanelProps) {
-  const today = new Date().toISOString().split("T")[0];
+export function ReportingPanel({ sprint, weekStartDay, timezone }: ReportingPanelProps) {
+  const today = todayInTz(timezone);
   const [scope, setScope] = useState<Scope>("day");
   const [selectedDate, setSelectedDate] = useState(today);
   const [customFrom, setCustomFrom] = useState(today);
@@ -187,7 +189,7 @@ export function ReportingPanel({ sprint, weekStartDay }: ReportingPanelProps) {
       {metrics && !isLoading && (
         <>
           {scope === "day" ? (
-            <DayView metrics={metrics} />
+            <DayView metrics={metrics} timezone={timezone} />
           ) : (
             <MultiDayView metrics={metrics} />
           )}

@@ -8,12 +8,14 @@ interface CurrentActivityProps {
   text: string;
   classification: Classification;
   startTime: string;
+  timezone?: string;
 }
 
 export function CurrentActivity({
   text,
   classification,
   startTime,
+  timezone,
 }: CurrentActivityProps) {
   const [elapsed, setElapsed] = useState("");
 
@@ -41,6 +43,7 @@ export function CurrentActivity({
   const formattedTime = new Date(startTime).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
+    ...(timezone ? { timeZone: timezone } : {}),
   });
 
   return (

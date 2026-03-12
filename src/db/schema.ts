@@ -152,4 +152,5 @@ export const preferences = sqliteTable("preferences", {
     .notNull()
     .default(5),
   weekStartDay: integer("week_start_day").notNull().default(1),
+  timezone: text("timezone").notNull().default("America/New_York"),
 });

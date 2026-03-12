@@ -15,6 +15,13 @@
       "when": 1773244141293,
       "tag": "0001_multi_user",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1773245042168,
+      "tag": "0002_wet_sunfire",
+      "breakpoints": true
     }
   ]
 }
