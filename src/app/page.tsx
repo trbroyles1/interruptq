@@ -69,6 +69,7 @@ function AppView() {
   const { status: saveStatus, wrap } = useSaveStatus();
 
   const [activeView, setActiveView] = useState<"timeline" | "report">("timeline");
+  const [quickPickCollapsed, setQuickPickCollapsed] = useState(false);
 
   const handleSubmit = useCallback(
     async (text: string) => {
@@ -200,22 +201,35 @@ function AppView() {
         </div>
 
         {/* Quick-Pick Grid */}
-        <div className="p-4 border-b border-border">
-          <QuickPickGrid
-            isOnCall={isOnCall}
-            onCallPrefix={preferences?.onCallPrefix ?? "CALL"}
-            sprintGoals={goals}
-            priorities={priorities}
-            recentActivities={activities.filter((a: { classification: string }) => a.classification !== "break")}
-            quickPickRecentCount={preferences?.quickPickRecentCount ?? 10}
-            quickPickOncallTicketCount={
-              preferences?.quickPickOncallTicketCount ?? 5
-            }
-            quickPickOncallOtherCount={
-              preferences?.quickPickOncallOtherCount ?? 5
-            }
-            onPick={handleQuickPick}
-          />
+        <div className="relative">
+          {!quickPickCollapsed && (
+            <div className="p-4 border-b border-border">
+              <QuickPickGrid
+                isOnCall={isOnCall}
+                onCallPrefix={preferences?.onCallPrefix ?? "CALL"}
+                sprintGoals={goals}
+                priorities={priorities}
+                recentActivities={activities.filter((a: { classification: string }) => a.classification !== "break")}
+                quickPickRecentCount={preferences?.quickPickRecentCount ?? 10}
+                quickPickOncallTicketCount={
+                  preferences?.quickPickOncallTicketCount ?? 5
+                }
+                quickPickOncallOtherCount={
+                  preferences?.quickPickOncallOtherCount ?? 5
+                }
+                onPick={handleQuickPick}
+              />
+            </div>
+          )}
+          <div className="border-b border-border flex justify-center">
+            <button
+              onClick={() => setQuickPickCollapsed((c) => !c)}
+              className="px-3 py-0.5 text-muted-foreground hover:text-foreground transition-colors text-xs"
+              title={quickPickCollapsed ? "Show quick picks" : "Hide quick picks"}
+            >
+              {quickPickCollapsed ? "▼" : "▲"}
+            </button>
+          </div>
         </div>
 
         {/* Activity Timeline / Reports */}
