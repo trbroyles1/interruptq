@@ -3,12 +3,17 @@ import { db } from "@/db/index";
 import { preferences } from "@/db/schema";
 import { ensureDb } from "@/db/init";
 import { eq } from "drizzle-orm";
+import { withIdentity } from "@/lib/auth";
 import type { WorkingHours } from "@/types";
 
 ensureDb();
 
-export async function GET() {
-  const row = db.select().from(preferences).where(eq(preferences.id, 1)).get();
+export const GET = withIdentity(async (_request: Request, identityId: number) => {
+  const row = db
+    .select()
+    .from(preferences)
+    .where(eq(preferences.identityId, identityId))
+    .get();
   if (!row) {
     return NextResponse.json({ error: "No preferences found" }, { status: 404 });
   }
@@ -16,9 +21,9 @@ export async function GET() {
     ...row,
     workingHours: JSON.parse(row.workingHours) as WorkingHours,
   });
-}
+});
 
-export async function PUT(request: Request) {
+export const PUT = withIdentity(async (request: Request, identityId: number) => {
   const body = await request.json();
   const updates: Record<string, unknown> = {};
 
@@ -45,11 +50,18 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  db.update(preferences).set(updates).where(eq(preferences.id, 1)).run();
+  db.update(preferences)
+    .set(updates)
+    .where(eq(preferences.identityId, identityId))
+    .run();
 
-  const row = db.select().from(preferences).where(eq(preferences.id, 1)).get();
+  const row = db
+    .select()
+    .from(preferences)
+    .where(eq(preferences.identityId, identityId))
+    .get();
   return NextResponse.json({
     ...row,
     workingHours: JSON.parse(row!.workingHours) as WorkingHours,
   });
-}
+});

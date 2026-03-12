@@ -14,34 +14,43 @@ import { eq, desc, isNull, and, gte, lte } from "drizzle-orm";
 import { parseEntry } from "@/lib/parse";
 import { classify } from "@/lib/classify";
 import { computeBlockDuration } from "@/lib/time";
+import { withIdentity } from "@/lib/auth";
 import type { Classification, PriorityItem, WorkingHours } from "@/types";
 
 ensureDb();
 
-export async function GET(request: Request) {
+export const GET = withIdentity(async (request: Request, identityId: number) => {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  // Build query conditions
   let rows;
   if (date) {
-    // Single day: get activities from that day + the last activity before that day
     const dayStart = `${date}T00:00:00`;
     const dayEnd = `${date}T23:59:59`;
     rows = db
       .select()
       .from(activities)
-      .where(and(gte(activities.timestamp, dayStart), lte(activities.timestamp, dayEnd)))
+      .where(
+        and(
+          eq(activities.identityId, identityId),
+          gte(activities.timestamp, dayStart),
+          lte(activities.timestamp, dayEnd)
+        )
+      )
       .orderBy(activities.timestamp)
       .all();
 
-    // Also get the last activity before this day (it may span into this day)
     const prior = db
       .select()
       .from(activities)
-      .where(lte(activities.timestamp, dayStart))
+      .where(
+        and(
+          eq(activities.identityId, identityId),
+          lte(activities.timestamp, dayStart)
+        )
+      )
       .orderBy(desc(activities.timestamp))
       .limit(1)
       .get();
@@ -55,14 +64,25 @@ export async function GET(request: Request) {
     rows = db
       .select()
       .from(activities)
-      .where(and(gte(activities.timestamp, rangeStart), lte(activities.timestamp, rangeEnd)))
+      .where(
+        and(
+          eq(activities.identityId, identityId),
+          gte(activities.timestamp, rangeStart),
+          lte(activities.timestamp, rangeEnd)
+        )
+      )
       .orderBy(activities.timestamp)
       .all();
 
     const prior = db
       .select()
       .from(activities)
-      .where(lte(activities.timestamp, rangeStart))
+      .where(
+        and(
+          eq(activities.identityId, identityId),
+          lte(activities.timestamp, rangeStart)
+        )
+      )
       .orderBy(desc(activities.timestamp))
       .limit(1)
       .get();
@@ -71,21 +91,31 @@ export async function GET(request: Request) {
       rows = [prior, ...rows];
     }
   } else {
-    // Default: today
     const today = new Date().toISOString().split("T")[0];
     const dayStart = `${today}T00:00:00`;
     const dayEnd = `${today}T23:59:59`;
     rows = db
       .select()
       .from(activities)
-      .where(and(gte(activities.timestamp, dayStart), lte(activities.timestamp, dayEnd)))
+      .where(
+        and(
+          eq(activities.identityId, identityId),
+          gte(activities.timestamp, dayStart),
+          lte(activities.timestamp, dayEnd)
+        )
+      )
       .orderBy(activities.timestamp)
       .all();
 
     const prior = db
       .select()
       .from(activities)
-      .where(lte(activities.timestamp, dayStart))
+      .where(
+        and(
+          eq(activities.identityId, identityId),
+          lte(activities.timestamp, dayStart)
+        )
+      )
       .orderBy(desc(activities.timestamp))
       .limit(1)
       .get();
@@ -96,7 +126,11 @@ export async function GET(request: Request) {
   }
 
   // Get working hours for duration computation
-  const prefs = db.select().from(preferences).where(eq(preferences.id, 1)).get();
+  const prefs = db
+    .select()
+    .from(preferences)
+    .where(eq(preferences.identityId, identityId))
+    .get();
   const workingHours: WorkingHours = prefs
     ? JSON.parse(prefs.workingHours)
     : null;
@@ -106,7 +140,7 @@ export async function GET(request: Request) {
     const nextRow = rows[i + 1];
     const endTime = nextRow
       ? nextRow.timestamp
-      : new Date().toISOString(); // ongoing activity
+      : new Date().toISOString();
 
     const durationMinutes = workingHours
       ? computeBlockDuration(row.timestamp, endTime, workingHours)
@@ -122,17 +156,18 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json(withDuration);
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withIdentity(async (request: Request, identityId: number) => {
   const body = await request.json();
   const isBreak = body.isBreak === true;
 
-  // Guard against double-break: if already on break, return existing entry (no-op per spec §7)
+  // Guard against double-break
   if (isBreak) {
     const latest = db
       .select()
       .from(activities)
+      .where(eq(activities.identityId, identityId))
       .orderBy(desc(activities.timestamp))
       .limit(1)
       .get();
@@ -153,7 +188,9 @@ export async function POST(request: Request) {
   const currentSprint = db
     .select()
     .from(sprints)
-    .where(isNull(sprints.endDate))
+    .where(
+      and(eq(sprints.identityId, identityId), isNull(sprints.endDate))
+    )
     .limit(1)
     .get();
 
@@ -161,6 +198,7 @@ export async function POST(request: Request) {
   const latestOnCall = db
     .select()
     .from(onCallChanges)
+    .where(eq(onCallChanges.identityId, identityId))
     .orderBy(desc(onCallChanges.timestamp))
     .limit(1)
     .get();
@@ -175,11 +213,13 @@ export async function POST(request: Request) {
   } else {
     parsed = parseEntry(text);
 
-    // Get on-call prefix from preferences
-    const prefs = db.select().from(preferences).where(eq(preferences.id, 1)).get();
+    const prefs = db
+      .select()
+      .from(preferences)
+      .where(eq(preferences.identityId, identityId))
+      .get();
     const onCallPrefix = prefs?.onCallPrefix ?? "CALL";
 
-    // Get current sprint goals
     let sprintGoals: string[] = [];
     if (currentSprint) {
       const goalSnapshot = db
@@ -194,7 +234,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Get current priorities
     let priorities: PriorityItem[] = [];
     if (currentSprint) {
       const prioritySnapshot = db
@@ -209,7 +248,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Classify
     classification = classify({
       entryText: text,
       entryTickets: parsed.tickets,
@@ -224,6 +262,7 @@ export async function POST(request: Request) {
   const activity = db
     .insert(activities)
     .values({
+      identityId,
       timestamp: now,
       text,
       tickets: JSON.stringify(parsed.tickets),
@@ -238,7 +277,7 @@ export async function POST(request: Request) {
   // Persist any new @-tags
   for (const tag of parsed.tags) {
     db.insert(knownTags)
-      .values({ name: tag })
+      .values({ identityId, name: tag })
       .onConflictDoNothing()
       .run();
   }
@@ -248,4 +287,4 @@ export async function POST(request: Request) {
     tickets: parsed.tickets,
     tags: parsed.tags,
   });
-}
+});

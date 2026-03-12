@@ -108,7 +108,7 @@ function TimelineView({
   );
 }
 
-function AggregateView({ metrics }: { metrics: RangeMetrics }) {
+export function AggregateView({ metrics }: { metrics: RangeMetrics }) {
   return (
     <div className="space-y-4">
       {/* Classification summary */}

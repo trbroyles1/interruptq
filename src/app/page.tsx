@@ -12,6 +12,8 @@ import { OnCallToggle } from "@/components/shared/OnCallToggle";
 import { BreakButton } from "@/components/shared/BreakButton";
 import { SaveIndicator } from "@/components/shared/SaveIndicator";
 import { PreferencesPanel } from "@/components/preferences/PreferencesPanel";
+import { WelcomeScreen } from "@/components/auth/WelcomeScreen";
+import { useAuth } from "@/hooks/useAuth";
 import { useActivities } from "@/hooks/useActivities";
 import { useAutoBreak } from "@/hooks/useAutoBreak";
 import { useSprint } from "@/hooks/useSprint";
@@ -21,8 +23,27 @@ import { useSaveStatus } from "@/hooks/useSaveStatus";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ReportingPanel } from "@/components/reporting/ReportingPanel";
+import { ShareLinkManager } from "@/components/share/ShareLinkManager";
 
 export default function Home() {
+  const { connected, isLoading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <p className="text-muted-foreground text-sm">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!connected) {
+    return <WelcomeScreen />;
+  }
+
+  return <AppView />;
+}
+
+function AppView() {
   const today = new Date().toISOString().split("T")[0];
   const { activities, createActivity, startBreak, mutate: mutateActivities } = useActivities(today);
   const {
@@ -210,6 +231,9 @@ export default function Home() {
             >
               Reports
             </button>
+            <div className="ml-auto">
+              <ShareLinkManager />
+            </div>
           </div>
 
           <ScrollArea className="flex-1 px-4 pb-4">

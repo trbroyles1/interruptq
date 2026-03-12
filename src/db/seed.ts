@@ -2,17 +2,41 @@ import { db } from "./index";
 import { preferences, sprints } from "./schema";
 import { eq } from "drizzle-orm";
 
-export function seedDefaults() {
-  // Ensure a default preferences row exists
-  const existing = db.select().from(preferences).where(eq(preferences.id, 1)).get();
+/**
+ * Seed default preferences and an initial sprint for a given identity.
+ * Called when a new identity is created (via token generation).
+ */
+export function seedIdentityDefaults(identityId: number) {
+  // Ensure a default preferences row exists for this identity
+  const existing = db
+    .select()
+    .from(preferences)
+    .where(eq(preferences.identityId, identityId))
+    .get();
   if (!existing) {
-    db.insert(preferences).values({ id: 1 }).run();
+    db.insert(preferences).values({ identityId }).run();
   }
 
-  // Ensure at least one sprint exists
-  const existingSprint = db.select().from(sprints).orderBy(sprints.id).limit(1).get();
+  // Ensure at least one sprint exists for this identity
+  const existingSprint = db
+    .select()
+    .from(sprints)
+    .where(eq(sprints.identityId, identityId))
+    .limit(1)
+    .get();
   if (!existingSprint) {
     const today = new Date().toISOString().split("T")[0];
-    db.insert(sprints).values({ ordinal: 1, startDate: today }).run();
+    db.insert(sprints)
+      .values({ identityId, ordinal: 1, startDate: today })
+      .run();
   }
+}
+
+/**
+ * Legacy seed function — now a no-op.
+ * Pre-existing data was assigned to sentinel identity (id=1) by migration.
+ * New identities are seeded via seedIdentityDefaults() at creation time.
+ */
+export function seedDefaults() {
+  // No-op: seeding is now per-identity
 }

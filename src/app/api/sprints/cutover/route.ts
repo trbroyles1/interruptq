@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { sprints } from "@/db/schema";
 import { ensureDb } from "@/db/init";
-import { isNull, desc } from "drizzle-orm";
+import { and, eq, isNull, desc } from "drizzle-orm";
+import { withIdentity } from "@/lib/auth";
 
 ensureDb();
 
-export async function POST(request: Request) {
+export const POST = withIdentity(async (request: Request, identityId: number) => {
   const body = await request.json().catch(() => ({}));
   const cutoverDate = body.date || new Date().toISOString().split("T")[0];
 
@@ -14,20 +15,21 @@ export async function POST(request: Request) {
   const current = db
     .select()
     .from(sprints)
-    .where(isNull(sprints.endDate))
+    .where(and(eq(sprints.identityId, identityId), isNull(sprints.endDate)))
     .get();
 
   if (current) {
     db.update(sprints)
       .set({ endDate: cutoverDate })
-      .where(isNull(sprints.endDate))
+      .where(and(eq(sprints.identityId, identityId), isNull(sprints.endDate)))
       .run();
   }
 
-  // Get the highest ordinal
+  // Get the highest ordinal for this identity
   const last = db
     .select()
     .from(sprints)
+    .where(eq(sprints.identityId, identityId))
     .orderBy(desc(sprints.ordinal))
     .limit(1)
     .get();
@@ -37,9 +39,9 @@ export async function POST(request: Request) {
   // Create a new sprint
   const result = db
     .insert(sprints)
-    .values({ ordinal: nextOrdinal, startDate: cutoverDate })
+    .values({ identityId, ordinal: nextOrdinal, startDate: cutoverDate })
     .returning()
     .get();
 
   return NextResponse.json(result);
-}
+});

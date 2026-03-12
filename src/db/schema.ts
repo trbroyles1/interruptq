@@ -1,18 +1,61 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-export const sprints = sqliteTable("sprints", {
+// --- Identity & sharing tables ---
+
+export const identities = sqliteTable("identities", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  ordinal: integer("ordinal").notNull().unique(),
-  startDate: text("start_date").notNull(),
-  endDate: text("end_date"),
+  tokenHash: text("token_hash"),
   createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  lastSeen: text("last_seen")
     .notNull()
     .default(sql`(datetime('now'))`),
 });
 
+export const shareLinks = sqliteTable("share_links", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  identityId: integer("identity_id")
+    .notNull()
+    .references(() => identities.id),
+  shareId: text("share_id").notNull().unique(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  expiresAt: text("expires_at").notNull(),
+  revokedAt: text("revoked_at"),
+});
+
+// --- Core data tables (all partitioned by identityId) ---
+
+export const sprints = sqliteTable(
+  "sprints",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    identityId: integer("identity_id")
+      .notNull()
+      .references(() => identities.id),
+    ordinal: integer("ordinal").notNull(),
+    startDate: text("start_date").notNull(),
+    endDate: text("end_date"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    uniqueIndex("sprints_identity_ordinal_unique").on(
+      table.identityId,
+      table.ordinal
+    ),
+  ]
+);
+
 export const activities = sqliteTable("activities", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  identityId: integer("identity_id")
+    .notNull()
+    .references(() => identities.id),
   timestamp: text("timestamp").notNull(),
   text: text("text").notNull(),
   tickets: text("tickets").notNull().default("[]"),
@@ -31,6 +74,9 @@ export const activities = sqliteTable("activities", {
 
 export const sprintGoalSnapshots = sqliteTable("sprint_goal_snapshots", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  identityId: integer("identity_id")
+    .notNull()
+    .references(() => identities.id),
   sprintId: integer("sprint_id")
     .notNull()
     .references(() => sprints.id),
@@ -40,6 +86,9 @@ export const sprintGoalSnapshots = sqliteTable("sprint_goal_snapshots", {
 
 export const prioritySnapshots = sqliteTable("priority_snapshots", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  identityId: integer("identity_id")
+    .notNull()
+    .references(() => identities.id),
   sprintId: integer("sprint_id")
     .notNull()
     .references(() => sprints.id),
@@ -49,20 +98,38 @@ export const prioritySnapshots = sqliteTable("priority_snapshots", {
 
 export const onCallChanges = sqliteTable("on_call_changes", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  identityId: integer("identity_id")
+    .notNull()
+    .references(() => identities.id),
   timestamp: text("timestamp").notNull(),
   status: integer("status", { mode: "boolean" }).notNull(),
 });
 
-export const knownTags = sqliteTable("known_tags", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull().unique(),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
-});
+export const knownTags = sqliteTable(
+  "known_tags",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    identityId: integer("identity_id")
+      .notNull()
+      .references(() => identities.id),
+    name: text("name").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    uniqueIndex("known_tags_identity_name_unique").on(
+      table.identityId,
+      table.name
+    ),
+  ]
+);
 
 export const preferences = sqliteTable("preferences", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  identityId: integer("identity_id")
+    .notNull()
+    .references(() => identities.id),
   workingHours: text("working_hours").notNull().default(
     JSON.stringify({
       mon: { enabled: true, start: "09:00", end: "18:00" },

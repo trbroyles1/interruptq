@@ -8,7 +8,8 @@
     "start": "next start",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "claim-data": "npx tsx src/cli/claim-data.ts"
   },
   "keywords": [],
   "author": "",
@@ -40,6 +41,7 @@
     "eslint-config-next": "^16.1.6",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

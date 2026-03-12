@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -12,7 +13,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Settings } from "lucide-react";
+import { Settings, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import type { Preferences, DayOfWeek, WorkingHours } from "@/types";
 
 interface PreferencesPanelProps {
@@ -34,6 +36,8 @@ const DAY_ORDER: DayOfWeek[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps) {
   const [open, setOpen] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const { disconnect } = useAuth();
 
   if (!preferences) return null;
 
@@ -176,6 +180,51 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
               <option value={1}>Monday</option>
               <option value={6}>Saturday</option>
             </select>
+          </div>
+
+          <Separator />
+
+          {/* Disconnect */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              Session
+            </Label>
+            {!confirmDisconnect ? (
+              <Button
+                variant="outline"
+                className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                onClick={() => setConfirmDisconnect(true)}
+              >
+                Disconnect
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Are you sure? You will need your token to reconnect.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="flex-1"
+                    onClick={async () => {
+                      await disconnect();
+                    }}
+                  >
+                    Confirm
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setConfirmDisconnect(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </SheetContent>

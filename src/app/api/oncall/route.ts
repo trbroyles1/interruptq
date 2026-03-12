@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { onCallChanges } from "@/db/schema";
 import { ensureDb } from "@/db/init";
-import { desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
+import { withIdentity } from "@/lib/auth";
 
 ensureDb();
 
-export async function GET() {
+export const GET = withIdentity(async (_request: Request, identityId: number) => {
   const latest = db
     .select()
     .from(onCallChanges)
+    .where(eq(onCallChanges.identityId, identityId))
     .orderBy(desc(onCallChanges.timestamp))
     .limit(1)
     .get();
@@ -18,12 +20,13 @@ export async function GET() {
     isOnCall: latest?.status ?? false,
     lastChanged: latest?.timestamp ?? null,
   });
-}
+});
 
-export async function POST() {
+export const POST = withIdentity(async (_request: Request, identityId: number) => {
   const latest = db
     .select()
     .from(onCallChanges)
+    .where(eq(onCallChanges.identityId, identityId))
     .orderBy(desc(onCallChanges.timestamp))
     .limit(1)
     .get();
@@ -33,11 +36,11 @@ export async function POST() {
   const now = new Date().toISOString();
 
   db.insert(onCallChanges)
-    .values({ timestamp: now, status: newStatus })
+    .values({ identityId, timestamp: now, status: newStatus })
     .run();
 
   return NextResponse.json({
     isOnCall: newStatus,
     lastChanged: now,
   });
-}
+});
