@@ -106,7 +106,7 @@ export function ActivityInput({ onSubmit }: ActivityInputProps) {
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        placeholder="What are you working on? (e.g., TIK-789 @Mark bugfix)"
+        placeholder="What are you working on? (e.g., TIK-789 @Person bugfix)"
         className="h-12 text-lg bg-card border-border"
         autoFocus
       />
