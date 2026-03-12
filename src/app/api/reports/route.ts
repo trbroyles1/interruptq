@@ -133,6 +133,7 @@ export async function GET(request: Request) {
   const onCallPrefix = prefs?.onCallPrefix ?? "CALL";
 
   for (const a of withDuration) {
+    if (a.classification === "break") continue;
     if (a.onCallAtTime) {
       onCallMinutes += a.durationMinutes;
     }

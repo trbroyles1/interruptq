@@ -83,7 +83,9 @@ function TimelineView({
             ? "bg-green-activity"
             : a.classification === "yellow"
               ? "bg-yellow-activity"
-              : "bg-red-activity";
+              : a.classification === "break"
+                ? "bg-gray-activity"
+                : "bg-red-activity";
 
         return (
           <div key={i} className="flex items-center gap-2">

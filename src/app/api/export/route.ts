@@ -108,6 +108,7 @@ export async function GET(request: Request) {
   let onCallMinutes = 0;
   let onCallTicketMinutes = 0;
   for (const a of withDuration) {
+    if (a.classification === "break") continue;
     if (a.onCallAtTime) onCallMinutes += a.durationMinutes;
     if (a.tickets.some((t: string) => t.toUpperCase().startsWith(onCallPrefix.toUpperCase() + "-")))
       onCallTicketMinutes += a.durationMinutes;

@@ -1,4 +1,4 @@
-export type Classification = "green" | "yellow" | "red";
+export type Classification = "green" | "yellow" | "red" | "break";
 
 export type DayOfWeek = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 

@@ -24,11 +24,24 @@ export function useActivities(date?: string) {
     return activity;
   };
 
+  const startBreak = async () => {
+    const res = await fetch("/api/activities", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isBreak: true }),
+    });
+    if (!res.ok) throw new Error("Failed to start break");
+    const activity = await res.json();
+    await mutate();
+    return activity;
+  };
+
   return {
     activities: data ?? [],
     isLoading,
     error,
     createActivity,
+    startBreak,
     mutate,
   };
 }

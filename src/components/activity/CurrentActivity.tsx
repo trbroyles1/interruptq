@@ -51,7 +51,9 @@ export function CurrentActivity({
             ? "bg-green-activity"
             : classification === "yellow"
               ? "bg-yellow-activity"
-              : "bg-red-activity"
+              : classification === "break"
+                ? "bg-gray-activity"
+                : "bg-red-activity"
         }`}
       />
       <div className="flex-1 min-w-0">

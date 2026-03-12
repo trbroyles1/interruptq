@@ -18,7 +18,7 @@ export const activities = sqliteTable("activities", {
   tickets: text("tickets").notNull().default("[]"),
   tags: text("tags").notNull().default("[]"),
   classification: text("classification", {
-    enum: ["green", "yellow", "red"],
+    enum: ["green", "yellow", "red", "break"],
   }).notNull(),
   sprintId: integer("sprint_id").references(() => sprints.id),
   onCallAtTime: integer("on_call_at_time", { mode: "boolean" })

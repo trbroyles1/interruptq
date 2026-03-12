@@ -14,7 +14,7 @@ import { eq, desc, isNull, and, gte, lte } from "drizzle-orm";
 import { parseEntry } from "@/lib/parse";
 import { classify } from "@/lib/classify";
 import { computeBlockDuration } from "@/lib/time";
-import type { PriorityItem, WorkingHours } from "@/types";
+import type { Classification, PriorityItem, WorkingHours } from "@/types";
 
 ensureDb();
 
@@ -126,14 +126,28 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const text: string = body.text?.trim();
+  const isBreak = body.isBreak === true;
 
-  if (!text) {
+  // Guard against double-break: if already on break, return existing entry (no-op per spec §7)
+  if (isBreak) {
+    const latest = db
+      .select()
+      .from(activities)
+      .orderBy(desc(activities.timestamp))
+      .limit(1)
+      .get();
+    if (latest?.classification === "break") {
+      return NextResponse.json(latest);
+    }
+  }
+
+  const text: string = isBreak ? "Break" : body.text?.trim();
+
+  if (!isBreak && !text) {
     return NextResponse.json({ error: "Text required" }, { status: 400 });
   }
 
   const now = body.timestamp || new Date().toISOString();
-  const parsed = parseEntry(text);
 
   // Get current sprint
   const currentSprint = db
@@ -152,49 +166,59 @@ export async function POST(request: Request) {
     .get();
   const isOnCall = latestOnCall?.status ?? false;
 
-  // Get on-call prefix from preferences
-  const prefs = db.select().from(preferences).where(eq(preferences.id, 1)).get();
-  const onCallPrefix = prefs?.onCallPrefix ?? "CALL";
+  let classification: Classification;
+  let parsed: { tickets: string[]; tags: string[] };
 
-  // Get current sprint goals
-  let sprintGoals: string[] = [];
-  if (currentSprint) {
-    const goalSnapshot = db
-      .select()
-      .from(sprintGoalSnapshots)
-      .where(eq(sprintGoalSnapshots.sprintId, currentSprint.id))
-      .orderBy(desc(sprintGoalSnapshots.timestamp))
-      .limit(1)
-      .get();
-    if (goalSnapshot) {
-      sprintGoals = JSON.parse(goalSnapshot.goals);
+  if (isBreak) {
+    classification = "break";
+    parsed = { tickets: [], tags: [] };
+  } else {
+    parsed = parseEntry(text);
+
+    // Get on-call prefix from preferences
+    const prefs = db.select().from(preferences).where(eq(preferences.id, 1)).get();
+    const onCallPrefix = prefs?.onCallPrefix ?? "CALL";
+
+    // Get current sprint goals
+    let sprintGoals: string[] = [];
+    if (currentSprint) {
+      const goalSnapshot = db
+        .select()
+        .from(sprintGoalSnapshots)
+        .where(eq(sprintGoalSnapshots.sprintId, currentSprint.id))
+        .orderBy(desc(sprintGoalSnapshots.timestamp))
+        .limit(1)
+        .get();
+      if (goalSnapshot) {
+        sprintGoals = JSON.parse(goalSnapshot.goals);
+      }
     }
-  }
 
-  // Get current priorities
-  let priorities: PriorityItem[] = [];
-  if (currentSprint) {
-    const prioritySnapshot = db
-      .select()
-      .from(prioritySnapshots)
-      .where(eq(prioritySnapshots.sprintId, currentSprint.id))
-      .orderBy(desc(prioritySnapshots.timestamp))
-      .limit(1)
-      .get();
-    if (prioritySnapshot) {
-      priorities = JSON.parse(prioritySnapshot.priorities);
+    // Get current priorities
+    let priorities: PriorityItem[] = [];
+    if (currentSprint) {
+      const prioritySnapshot = db
+        .select()
+        .from(prioritySnapshots)
+        .where(eq(prioritySnapshots.sprintId, currentSprint.id))
+        .orderBy(desc(prioritySnapshots.timestamp))
+        .limit(1)
+        .get();
+      if (prioritySnapshot) {
+        priorities = JSON.parse(prioritySnapshot.priorities);
+      }
     }
-  }
 
-  // Classify
-  const classification = classify({
-    entryText: text,
-    entryTickets: parsed.tickets,
-    isOnCall,
-    onCallPrefix,
-    sprintGoals,
-    priorities,
-  });
+    // Classify
+    classification = classify({
+      entryText: text,
+      entryTickets: parsed.tickets,
+      isOnCall,
+      onCallPrefix,
+      sprintGoals,
+      priorities,
+    });
+  }
 
   // Persist activity
   const activity = db

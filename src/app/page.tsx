@@ -9,9 +9,11 @@ import { SprintPanel } from "@/components/sprint/SprintPanel";
 import { GoalsList } from "@/components/sprint/GoalsList";
 import { PrioritiesList } from "@/components/sprint/PrioritiesList";
 import { OnCallToggle } from "@/components/shared/OnCallToggle";
+import { BreakButton } from "@/components/shared/BreakButton";
 import { SaveIndicator } from "@/components/shared/SaveIndicator";
 import { PreferencesPanel } from "@/components/preferences/PreferencesPanel";
 import { useActivities } from "@/hooks/useActivities";
+import { useAutoBreak } from "@/hooks/useAutoBreak";
 import { useSprint } from "@/hooks/useSprint";
 import { useOnCall } from "@/hooks/useOnCall";
 import { usePreferences } from "@/hooks/usePreferences";
@@ -22,7 +24,7 @@ import { ReportingPanel } from "@/components/reporting/ReportingPanel";
 
 export default function Home() {
   const today = new Date().toISOString().split("T")[0];
-  const { activities, createActivity, mutate: mutateActivities } = useActivities(today);
+  const { activities, createActivity, startBreak, mutate: mutateActivities } = useActivities(today);
   const {
     sprint,
     goals,
@@ -61,6 +63,11 @@ export default function Home() {
   const currentActivity =
     activities.length > 0 ? activities[activities.length - 1] : null;
 
+  const isOnBreak = currentActivity?.classification === "break";
+
+  // Auto-break at end of workday
+  useAutoBreak(currentActivity, preferences, startBreak);
+
   // Past activities (all except last, reversed for display)
   const pastActivities = activities.length > 1
     ? [...activities.slice(0, -1)].reverse()
@@ -91,6 +98,15 @@ export default function Home() {
                 await wrap(async () => {
                   await toggleOnCall();
                   await mutateActivities();
+                });
+              }}
+            />
+
+            <BreakButton
+              isOnBreak={isOnBreak}
+              onBreak={async () => {
+                await wrap(async () => {
+                  await startBreak();
                 });
               }}
             />
@@ -159,7 +175,7 @@ export default function Home() {
             onCallPrefix={preferences?.onCallPrefix ?? "CALL"}
             sprintGoals={goals}
             priorities={priorities}
-            recentActivities={activities}
+            recentActivities={activities.filter((a: { classification: string }) => a.classification !== "break")}
             quickPickRecentCount={preferences?.quickPickRecentCount ?? 10}
             quickPickOncallTicketCount={
               preferences?.quickPickOncallTicketCount ?? 5

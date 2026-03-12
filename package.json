@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 3099",
     "build": "next build",
     "start": "next start",
     "db:generate": "drizzle-kit generate",
