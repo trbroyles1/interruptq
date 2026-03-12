@@ -23,9 +23,9 @@ if (dbDriver === "postgres") {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const schema = require("./schema");
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const path = require("path");
+  const path = require("node:path");
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fs = require("fs");
+  const fs = require("node:fs");
 
   const dbPath = getDbUrl();
   const resolvedPath = path.resolve(dbPath);

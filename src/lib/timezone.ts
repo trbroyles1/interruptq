@@ -63,12 +63,12 @@ export function toZonedParts(utcISO: string, tz: string): ZonedParts {
   }
 
   return {
-    year: parseInt(map.year, 10),
-    month: parseInt(map.month, 10),
-    day: parseInt(map.day, 10),
-    hour: map.hour === "24" ? 0 : parseInt(map.hour, 10),
-    minute: parseInt(map.minute, 10),
-    second: parseInt(map.second, 10),
+    year: Number.parseInt(map.year, 10),
+    month: Number.parseInt(map.month, 10),
+    day: Number.parseInt(map.day, 10),
+    hour: map.hour === "24" ? 0 : Number.parseInt(map.hour, 10),
+    minute: Number.parseInt(map.minute, 10),
+    second: Number.parseInt(map.second, 10),
     dayOfWeek: WEEKDAY_MAP[map.weekday] ?? 0,
   };
 }

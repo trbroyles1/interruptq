@@ -15,7 +15,7 @@ export const GET = withIdentity(
   ) => {
     await ensureDb();
     const { id } = await params;
-    const sprintId = parseInt(id, 10);
+    const sprintId = Number.parseInt(id, 10);
 
     // Validate sprint ownership
     const sprint = await first(
@@ -65,7 +65,7 @@ export const POST = withIdentity(
   ) => {
     await ensureDb();
     const { id } = await params;
-    const sprintId = parseInt(id, 10);
+    const sprintId = Number.parseInt(id, 10);
 
     // Validate sprint ownership
     const sprint = await first(

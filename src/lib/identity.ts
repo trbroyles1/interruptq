@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { db } from "@/db/index";
 import { identities } from "@/db/tables";
 import { eq } from "drizzle-orm";

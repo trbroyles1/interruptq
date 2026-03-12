@@ -128,7 +128,7 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
                   max={20}
                   value={preferences.quickPickRecentCount}
                   onChange={(e) =>
-                    onSave({ quickPickRecentCount: parseInt(e.target.value) || 10 })
+                    onSave({ quickPickRecentCount: Number.parseInt(e.target.value) || 10 })
                   }
                   className="h-7 w-16 text-sm text-center"
                 />
@@ -142,7 +142,7 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
                   value={preferences.quickPickOncallTicketCount}
                   onChange={(e) =>
                     onSave({
-                      quickPickOncallTicketCount: parseInt(e.target.value) || 5,
+                      quickPickOncallTicketCount: Number.parseInt(e.target.value) || 5,
                     })
                   }
                   className="h-7 w-16 text-sm text-center"
@@ -157,7 +157,7 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
                   value={preferences.quickPickOncallOtherCount}
                   onChange={(e) =>
                     onSave({
-                      quickPickOncallOtherCount: parseInt(e.target.value) || 5,
+                      quickPickOncallOtherCount: Number.parseInt(e.target.value) || 5,
                     })
                   }
                   className="h-7 w-16 text-sm text-center"
@@ -172,7 +172,7 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
             <select
               value={preferences.weekStartDay}
               onChange={(e) =>
-                onSave({ weekStartDay: parseInt(e.target.value) })
+                onSave({ weekStartDay: Number.parseInt(e.target.value) })
               }
               className="h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
             >

@@ -1,5 +1,5 @@
 import { db, dbDriver } from "./index";
-import path from "path";
+import path from "node:path";
 
 /**
  * Apply pending Drizzle migrations.
