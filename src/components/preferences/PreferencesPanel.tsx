@@ -266,6 +266,7 @@ function TimezoneSelect({
   onChange: (tz: string) => void;
 }) {
   const [filter, setFilter] = useState("");
+  const [open, setOpen] = useState(false);
 
   const allTimezones = useMemo(() => {
     try {
@@ -284,31 +285,58 @@ function TimezoneSelect({
   return (
     <div className="space-y-2">
       <Label className="text-sm font-semibold">Timezone</Label>
-      <Input
-        type="text"
-        placeholder="Search timezones..."
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        className="h-8 text-sm"
-      />
-      <select
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setFilter("");
-        }}
-        className="h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
-        size={Math.min(8, filtered.length)}
-      >
-        {filtered.map((tz) => (
-          <option key={tz} value={tz}>
-            {tz.replace(/_/g, " ")}
-          </option>
-        ))}
-      </select>
-      <p className="text-xs text-muted-foreground">
-        Current: {value.replace(/_/g, " ")}
-      </p>
+      {open ? (
+        <>
+          <Input
+            type="text"
+            placeholder="Search timezones..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            onBlur={(e) => {
+              // Don't close if clicking a timezone option
+              if (e.relatedTarget?.closest("[data-tz-list]")) return;
+              setOpen(false);
+              setFilter("");
+            }}
+            autoFocus
+            className="h-8 text-sm"
+          />
+          <div
+            data-tz-list
+            className="max-h-48 overflow-y-auto rounded-md border border-input bg-background"
+          >
+            {filtered.map((tz) => (
+              <button
+                key={tz}
+                type="button"
+                onClick={() => {
+                  onChange(tz);
+                  setFilter("");
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
+                  tz === value
+                    ? "bg-accent text-accent-foreground"
+                    : "text-foreground"
+                }`}
+              >
+                {tz.replace(/_/g, " ")}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">No timezones found</p>
+            )}
+          </div>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="h-8 w-full rounded-md border border-input bg-background px-3 text-sm text-left text-foreground hover:bg-accent/50 transition-colors"
+        >
+          {value.replace(/_/g, " ")}
+        </button>
+      )}
     </div>
   );
 }
