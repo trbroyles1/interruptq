@@ -8,7 +8,8 @@ import {
   onCallChanges,
   preferences,
   knownTags,
-} from "@/db/schema";
+} from "@/db/tables";
+import { first, all, run, returningFirst } from "@/db/helpers";
 import { ensureDb } from "@/db/init";
 import { eq, desc, isNull, and, gte, lte } from "drizzle-orm";
 import { parseEntry } from "@/lib/parse";
@@ -18,20 +19,18 @@ import { withIdentity } from "@/lib/auth";
 import { dayBoundsUTC, todayInTz, nowUTC } from "@/lib/timezone";
 import type { Classification, PriorityItem, WorkingHours } from "@/types";
 
-ensureDb();
-
 /**
  * Helper: fetch activities within UTC bounds.
  * Also returns the prior activity (last before range start) separately —
  * it's needed for computing the first in-range activity's duration but
  * should NOT be displayed in the timeline.
  */
-function fetchActivitiesInRange(
+async function fetchActivitiesInRange(
   identityId: number,
   rangeStart: string,
   rangeEnd: string
 ) {
-  const rows = db
+  const rows = await all(db
     .select()
     .from(activities)
     .where(
@@ -41,10 +40,9 @@ function fetchActivitiesInRange(
         lte(activities.timestamp, rangeEnd)
       )
     )
-    .orderBy(activities.timestamp)
-    .all();
+    .orderBy(activities.timestamp));
 
-  const prior = db
+  const prior = await first(db
     .select()
     .from(activities)
     .where(
@@ -54,24 +52,23 @@ function fetchActivitiesInRange(
       )
     )
     .orderBy(desc(activities.timestamp))
-    .limit(1)
-    .get();
+    .limit(1));
 
   return { rows, prior: prior && !rows.find((r) => r.id === prior.id) ? prior : null };
 }
 
 export const GET = withIdentity(async (request: Request, identityId: number) => {
+  await ensureDb();
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
   // Fetch preferences first — needed for timezone and working hours
-  const prefs = db
+  const prefs = await first(db
     .select()
     .from(preferences)
-    .where(eq(preferences.identityId, identityId))
-    .get();
+    .where(eq(preferences.identityId, identityId)));
   const workingHours: WorkingHours = prefs
     ? JSON.parse(prefs.workingHours)
     : null;
@@ -87,7 +84,7 @@ export const GET = withIdentity(async (request: Request, identityId: number) => 
     bounds = dayBoundsUTC(today, tz);
   }
 
-  const { rows, prior } = fetchActivitiesInRange(identityId, bounds.start, bounds.end);
+  const { rows, prior } = await fetchActivitiesInRange(identityId, bounds.start, bounds.end);
   // Build full list with prior prepended (for duration computation only)
   const allRows = prior ? [prior, ...rows] : rows;
 
@@ -120,18 +117,18 @@ export const GET = withIdentity(async (request: Request, identityId: number) => 
 });
 
 export const POST = withIdentity(async (request: Request, identityId: number) => {
+  await ensureDb();
   const body = await request.json();
   const isBreak = body.isBreak === true;
 
   // Guard against double-break
   if (isBreak) {
-    const latest = db
+    const latest = await first(db
       .select()
       .from(activities)
       .where(eq(activities.identityId, identityId))
       .orderBy(desc(activities.timestamp))
-      .limit(1)
-      .get();
+      .limit(1));
     if (latest?.classification === "break") {
       return NextResponse.json(latest);
     }
@@ -146,23 +143,21 @@ export const POST = withIdentity(async (request: Request, identityId: number) =>
   const now = body.timestamp || nowUTC();
 
   // Get current sprint
-  const currentSprint = db
+  const currentSprint = await first(db
     .select()
     .from(sprints)
     .where(
       and(eq(sprints.identityId, identityId), isNull(sprints.endDate))
     )
-    .limit(1)
-    .get();
+    .limit(1));
 
   // Get current on-call status
-  const latestOnCall = db
+  const latestOnCall = await first(db
     .select()
     .from(onCallChanges)
     .where(eq(onCallChanges.identityId, identityId))
     .orderBy(desc(onCallChanges.timestamp))
-    .limit(1)
-    .get();
+    .limit(1));
   const isOnCall = latestOnCall?.status ?? false;
 
   let classification: Classification;
@@ -174,22 +169,20 @@ export const POST = withIdentity(async (request: Request, identityId: number) =>
   } else {
     parsed = parseEntry(text);
 
-    const prefs = db
+    const prefs = await first(db
       .select()
       .from(preferences)
-      .where(eq(preferences.identityId, identityId))
-      .get();
+      .where(eq(preferences.identityId, identityId)));
     const onCallPrefix = prefs?.onCallPrefix ?? "CALL";
 
     let sprintGoals: string[] = [];
     if (currentSprint) {
-      const goalSnapshot = db
+      const goalSnapshot = await first(db
         .select()
         .from(sprintGoalSnapshots)
         .where(eq(sprintGoalSnapshots.sprintId, currentSprint.id))
         .orderBy(desc(sprintGoalSnapshots.timestamp))
-        .limit(1)
-        .get();
+        .limit(1));
       if (goalSnapshot) {
         sprintGoals = JSON.parse(goalSnapshot.goals);
       }
@@ -197,13 +190,12 @@ export const POST = withIdentity(async (request: Request, identityId: number) =>
 
     let priorities: PriorityItem[] = [];
     if (currentSprint) {
-      const prioritySnapshot = db
+      const prioritySnapshot = await first(db
         .select()
         .from(prioritySnapshots)
         .where(eq(prioritySnapshots.sprintId, currentSprint.id))
         .orderBy(desc(prioritySnapshots.timestamp))
-        .limit(1)
-        .get();
+        .limit(1));
       if (prioritySnapshot) {
         priorities = JSON.parse(prioritySnapshot.priorities);
       }
@@ -220,7 +212,7 @@ export const POST = withIdentity(async (request: Request, identityId: number) =>
   }
 
   // Persist activity
-  const activity = db
+  const activity = await returningFirst(db
     .insert(activities)
     .values({
       identityId,
@@ -232,15 +224,13 @@ export const POST = withIdentity(async (request: Request, identityId: number) =>
       sprintId: currentSprint?.id ?? null,
       onCallAtTime: isOnCall,
     })
-    .returning()
-    .get();
+    .returning());
 
   // Persist any new @-tags
   for (const tag of parsed.tags) {
-    db.insert(knownTags)
+    await run(db.insert(knownTags)
       .values({ identityId, name: tag })
-      .onConflictDoNothing()
-      .run();
+      .onConflictDoNothing());
   }
 
   return NextResponse.json({

@@ -1,43 +1,46 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
-import { knownTags } from "@/db/schema";
+import { knownTags } from "@/db/tables";
 import { ensureDb } from "@/db/init";
 import { and, eq, like } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
-
-ensureDb();
+import { all, run } from "@/db/helpers";
 
 export const GET = withIdentity(async (request: Request, identityId: number) => {
+  await ensureDb();
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q");
 
   let results;
   if (q) {
-    results = db
-      .select()
-      .from(knownTags)
-      .where(
-        and(
-          eq(knownTags.identityId, identityId),
-          like(knownTags.name, `%${q}%`)
+    results = await all(
+      db
+        .select()
+        .from(knownTags)
+        .where(
+          and(
+            eq(knownTags.identityId, identityId),
+            like(knownTags.name, `%${q}%`)
+          )
         )
-      )
-      .orderBy(knownTags.name)
-      .limit(20)
-      .all();
+        .orderBy(knownTags.name)
+        .limit(20)
+    );
   } else {
-    results = db
-      .select()
-      .from(knownTags)
-      .where(eq(knownTags.identityId, identityId))
-      .orderBy(knownTags.name)
-      .all();
+    results = await all(
+      db
+        .select()
+        .from(knownTags)
+        .where(eq(knownTags.identityId, identityId))
+        .orderBy(knownTags.name)
+    );
   }
 
   return NextResponse.json(results.map((r) => r.name));
 });
 
 export const POST = withIdentity(async (request: Request, identityId: number) => {
+  await ensureDb();
   const body = await request.json();
   const name: string = body.name?.trim();
 
@@ -45,10 +48,11 @@ export const POST = withIdentity(async (request: Request, identityId: number) =>
     return NextResponse.json({ error: "Name required" }, { status: 400 });
   }
 
-  db.insert(knownTags)
-    .values({ identityId, name })
-    .onConflictDoNothing()
-    .run();
+  await run(
+    db.insert(knownTags)
+      .values({ identityId, name })
+      .onConflictDoNothing()
+  );
 
   return NextResponse.json({ name });
 });

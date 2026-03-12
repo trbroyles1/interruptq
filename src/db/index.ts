@@ -1,18 +1,42 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import * as schema from "./schema";
-import path from "path";
+import { getDbDriver, getDbUrl } from "./config";
 
-const dbPath = process.env.DATABASE_URL || "./data/interruptq.db";
-const resolvedPath = path.resolve(dbPath);
+export const dbDriver = getDbDriver();
 
-// Ensure data directory exists
-import fs from "fs";
-fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _db: any;
 
-const sqlite = new Database(resolvedPath);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
+if (dbDriver === "postgres") {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const postgres = require("postgres");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { drizzle } = require("drizzle-orm/postgres-js");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const schema = require("./schema.pg");
 
-export const db = drizzle(sqlite, { schema });
-export type DB = typeof db;
+  const client = postgres(getDbUrl());
+  _db = drizzle(client, { schema });
+} else {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const Database = require("better-sqlite3");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { drizzle } = require("drizzle-orm/better-sqlite3");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const schema = require("./schema");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const path = require("path");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require("fs");
+
+  const dbPath = getDbUrl();
+  const resolvedPath = path.resolve(dbPath);
+
+  fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+
+  const sqlite = new Database(resolvedPath);
+  sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("foreign_keys = ON");
+
+  _db = drizzle(sqlite, { schema });
+}
+
+export const db = _db;

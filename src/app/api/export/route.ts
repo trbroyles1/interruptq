@@ -4,9 +4,8 @@ import { withIdentity } from "@/lib/auth";
 import { computeReportData } from "@/lib/report-data";
 import { generateTextExport } from "@/lib/export-text";
 
-ensureDb();
-
 export const GET = withIdentity(async (request: Request, identityId: number) => {
+  await ensureDb();
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from");
   const to = searchParams.get("to");
@@ -19,7 +18,7 @@ export const GET = withIdentity(async (request: Request, identityId: number) => 
     );
   }
 
-  const result = computeReportData(identityId, from, to);
+  const result = await computeReportData(identityId, from, to);
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 500 });
   }

@@ -1,11 +1,14 @@
 import { runMigrations } from "./migrate";
 import { seedDefaults } from "./seed";
 
-let initialized = false;
+let initPromise: Promise<void> | null = null;
 
-export function ensureDb() {
-  if (initialized) return;
-  runMigrations();
-  seedDefaults();
-  initialized = true;
+export async function ensureDb() {
+  if (!initPromise) {
+    initPromise = (async () => {
+      await runMigrations();
+      await seedDefaults();
+    })();
+  }
+  return initPromise;
 }

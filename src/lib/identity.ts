@@ -1,7 +1,8 @@
 import crypto from "crypto";
 import { db } from "@/db/index";
-import { identities } from "@/db/schema";
+import { identities } from "@/db/tables";
 import { eq } from "drizzle-orm";
+import { first, run } from "@/db/helpers";
 
 const TOKEN_PREFIX = "iqt-";
 const TOKEN_RANDOM_LENGTH = 32; // characters after prefix
@@ -30,14 +31,15 @@ export function hashToken(token: string): string {
  * Look up an identity by plaintext token.
  * Returns the identity record or null if not found.
  */
-export function resolveIdentity(token: string) {
+export async function resolveIdentity(token: string) {
   const hash = hashToken(token);
   return (
-    db
-      .select()
-      .from(identities)
-      .where(eq(identities.tokenHash, hash))
-      .get() ?? null
+    (await first(
+      db
+        .select()
+        .from(identities)
+        .where(eq(identities.tokenHash, hash))
+    )) ?? null
   );
 }
 
@@ -48,14 +50,15 @@ const LAST_SEEN_THROTTLE_MS = 60_000;
 /**
  * Update the last_seen timestamp for an identity, throttled to once per minute.
  */
-export function updateLastSeen(identityId: number) {
+export async function updateLastSeen(identityId: number) {
   const now = Date.now();
   const last = lastSeenCache.get(identityId);
   if (last && now - last < LAST_SEEN_THROTTLE_MS) return;
 
   lastSeenCache.set(identityId, now);
-  db.update(identities)
-    .set({ lastSeen: new Date().toISOString() })
-    .where(eq(identities.id, identityId))
-    .run();
+  await run(
+    db.update(identities)
+      .set({ lastSeen: new Date().toISOString() })
+      .where(eq(identities.id, identityId))
+  );
 }

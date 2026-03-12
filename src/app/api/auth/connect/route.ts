@@ -3,9 +3,8 @@ import { ensureDb } from "@/db/init";
 import { resolveIdentity } from "@/lib/identity";
 import { setCookieHeader, isSecureRequest } from "@/lib/auth";
 
-ensureDb();
-
 export async function POST(request: Request) {
+  await ensureDb();
   const body = await request.json();
   const token: string | undefined = body.token?.trim();
 
@@ -13,7 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Token required" }, { status: 400 });
   }
 
-  const identity = resolveIdentity(token);
+  const identity = await resolveIdentity(token);
   if (!identity) {
     return NextResponse.json({ error: "Token not recognized" }, { status: 401 });
   }

@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
-import { sprintGoalSnapshots, prioritySnapshots, sprints } from "@/db/schema";
+import { sprintGoalSnapshots, prioritySnapshots, sprints } from "@/db/tables";
 import { ensureDb } from "@/db/init";
 import { eq, and, desc } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
+import { first, all, run, returningFirst } from "@/db/helpers";
 import type { PriorityItem } from "@/types";
-
-ensureDb();
 
 export const GET = withIdentity(
   async (
@@ -14,36 +13,41 @@ export const GET = withIdentity(
     identityId: number,
     { params }: { params: Promise<{ id: string }> }
   ) => {
+    await ensureDb();
     const { id } = await params;
     const sprintId = parseInt(id, 10);
 
     // Validate sprint ownership
-    const sprint = db
-      .select()
-      .from(sprints)
-      .where(and(eq(sprints.id, sprintId), eq(sprints.identityId, identityId)))
-      .get();
+    const sprint = await first(
+      db
+        .select()
+        .from(sprints)
+        .where(and(eq(sprints.id, sprintId), eq(sprints.identityId, identityId)))
+    );
     if (!sprint) {
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
 
-    const latest = db
-      .select()
-      .from(sprintGoalSnapshots)
-      .where(eq(sprintGoalSnapshots.sprintId, sprintId))
-      .orderBy(desc(sprintGoalSnapshots.timestamp))
-      .limit(1)
-      .get();
+    const latest = await first(
+      db
+        .select()
+        .from(sprintGoalSnapshots)
+        .where(eq(sprintGoalSnapshots.sprintId, sprintId))
+        .orderBy(desc(sprintGoalSnapshots.timestamp))
+        .limit(1)
+    );
 
     if (!latest) {
       return NextResponse.json({ goals: [], snapshotCount: 0 });
     }
 
-    const count = db
-      .select()
-      .from(sprintGoalSnapshots)
-      .where(eq(sprintGoalSnapshots.sprintId, sprintId))
-      .all().length;
+    const rows = await all(
+      db
+        .select()
+        .from(sprintGoalSnapshots)
+        .where(eq(sprintGoalSnapshots.sprintId, sprintId))
+    );
+    const count = rows.length;
 
     return NextResponse.json({
       ...latest,
@@ -59,15 +63,17 @@ export const POST = withIdentity(
     identityId: number,
     { params }: { params: Promise<{ id: string }> }
   ) => {
+    await ensureDb();
     const { id } = await params;
     const sprintId = parseInt(id, 10);
 
     // Validate sprint ownership
-    const sprint = db
-      .select()
-      .from(sprints)
-      .where(and(eq(sprints.id, sprintId), eq(sprints.identityId, identityId)))
-      .get();
+    const sprint = await first(
+      db
+        .select()
+        .from(sprints)
+        .where(and(eq(sprints.id, sprintId), eq(sprints.identityId, identityId)))
+    );
     if (!sprint) {
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
@@ -77,16 +83,17 @@ export const POST = withIdentity(
     const now = new Date().toISOString();
 
     // Create goal snapshot
-    const goalSnapshot = db
-      .insert(sprintGoalSnapshots)
-      .values({
-        identityId,
-        sprintId,
-        timestamp: now,
-        goals: JSON.stringify(goals),
-      })
-      .returning()
-      .get();
+    const goalSnapshot = await returningFirst(
+      db
+        .insert(sprintGoalSnapshots)
+        .values({
+          identityId,
+          sprintId,
+          timestamp: now,
+          goals: JSON.stringify(goals),
+        })
+        .returning()
+    );
 
     // Overwrite priorities to match goals
     const priorities: PriorityItem[] = goals.map((g) => ({
@@ -94,14 +101,15 @@ export const POST = withIdentity(
       value: g,
     }));
 
-    db.insert(prioritySnapshots)
-      .values({
-        identityId,
-        sprintId,
-        timestamp: now,
-        priorities: JSON.stringify(priorities),
-      })
-      .run();
+    await run(
+      db.insert(prioritySnapshots)
+        .values({
+          identityId,
+          sprintId,
+          timestamp: now,
+          priorities: JSON.stringify(priorities),
+        })
+    );
 
     return NextResponse.json({
       ...goalSnapshot,

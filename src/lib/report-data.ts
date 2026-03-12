@@ -6,7 +6,8 @@ import {
   prioritySnapshots,
   onCallChanges,
   sprints,
-} from "@/db/schema";
+} from "@/db/tables";
+import { first, all } from "@/db/helpers";
 import { eq, and, gte, lte, desc, isNull } from "drizzle-orm";
 import { computeBlockDuration } from "@/lib/time";
 import { computeMetrics, type RangeMetrics } from "@/lib/metrics";
@@ -25,17 +26,18 @@ export interface ReportPayload extends RangeMetrics {
  * Compute full report data for an identity within a date range.
  * Shared between the authenticated /api/reports route and the share link report route.
  */
-export function computeReportData(
+export async function computeReportData(
   identityId: number,
   from: string,
   to: string
-): { data: ReportPayload } | { error: string } {
+): Promise<{ data: ReportPayload } | { error: string }> {
   // Get working hours and timezone first (needed for query boundaries)
-  const prefs = db
-    .select()
-    .from(preferences)
-    .where(eq(preferences.identityId, identityId))
-    .get();
+  const prefs = await first(
+    db
+      .select()
+      .from(preferences)
+      .where(eq(preferences.identityId, identityId))
+  );
   const workingHours: WorkingHours = prefs
     ? JSON.parse(prefs.workingHours)
     : null;
@@ -50,32 +52,34 @@ export function computeReportData(
   const rangeStart = dayBoundsUTC(from, tz).start;
   const rangeEnd = dayBoundsUTC(to, tz).end;
 
-  const rows = db
-    .select()
-    .from(activities)
-    .where(
-      and(
-        eq(activities.identityId, identityId),
-        gte(activities.timestamp, rangeStart),
-        lte(activities.timestamp, rangeEnd)
+  const rows = await all(
+    db
+      .select()
+      .from(activities)
+      .where(
+        and(
+          eq(activities.identityId, identityId),
+          gte(activities.timestamp, rangeStart),
+          lte(activities.timestamp, rangeEnd)
+        )
       )
-    )
-    .orderBy(activities.timestamp)
-    .all();
+      .orderBy(activities.timestamp)
+  );
 
   // Include the last activity before the range (it may span into the range)
-  const prior = db
-    .select()
-    .from(activities)
-    .where(
-      and(
-        eq(activities.identityId, identityId),
-        lte(activities.timestamp, rangeStart)
+  const prior = await first(
+    db
+      .select()
+      .from(activities)
+      .where(
+        and(
+          eq(activities.identityId, identityId),
+          lte(activities.timestamp, rangeStart)
+        )
       )
-    )
-    .orderBy(desc(activities.timestamp))
-    .limit(1)
-    .get();
+      .orderBy(desc(activities.timestamp))
+      .limit(1)
+  );
 
   const hasPrior = prior && !rows.find((r) => r.id === prior.id);
   // Build full list with prior prepended for duration computation only.
@@ -107,25 +111,27 @@ export function computeReportData(
   const metrics = computeMetrics(withDuration, tz);
 
   // Sprint-specific data
-  const currentSprint = db
-    .select()
-    .from(sprints)
-    .where(
-      and(eq(sprints.identityId, identityId), isNull(sprints.endDate))
-    )
-    .limit(1)
-    .get();
+  const currentSprint = await first(
+    db
+      .select()
+      .from(sprints)
+      .where(
+        and(eq(sprints.identityId, identityId), isNull(sprints.endDate))
+      )
+      .limit(1)
+  );
 
   let goalChangeCount = 0;
   let priorityChangeCount = 0;
   let sprintGoals: string[] = [];
 
   if (currentSprint) {
-    const goalSnapshots = db
-      .select()
-      .from(sprintGoalSnapshots)
-      .where(eq(sprintGoalSnapshots.sprintId, currentSprint.id))
-      .all();
+    const goalSnapshots = await all(
+      db
+        .select()
+        .from(sprintGoalSnapshots)
+        .where(eq(sprintGoalSnapshots.sprintId, currentSprint.id))
+    );
     goalChangeCount = Math.max(0, goalSnapshots.length - 1);
 
     const latestGoals = goalSnapshots.sort(
@@ -135,11 +141,12 @@ export function computeReportData(
       sprintGoals = JSON.parse(latestGoals.goals);
     }
 
-    const prioritySnaps = db
-      .select()
-      .from(prioritySnapshots)
-      .where(eq(prioritySnapshots.sprintId, currentSprint.id))
-      .all();
+    const prioritySnaps = await all(
+      db
+        .select()
+        .from(prioritySnapshots)
+        .where(eq(prioritySnapshots.sprintId, currentSprint.id))
+    );
     priorityChangeCount = Math.max(0, prioritySnaps.length - 1);
   }
 
@@ -187,12 +194,12 @@ export function computeReportData(
  * Compute export data (activities with durations) for an identity within a date range.
  * Shared between the authenticated /api/export route and the share link export route.
  */
-export function computeExportData(
+export async function computeExportData(
   identityId: number,
   from: string,
   to: string
 ) {
-  const result = computeReportData(identityId, from, to);
+  const result = await computeReportData(identityId, from, to);
   if ("error" in result) return result;
   return { data: result.data, from, to };
 }

@@ -1,26 +1,27 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
-import { identities } from "@/db/schema";
+import { identities } from "@/db/tables";
 import { ensureDb } from "@/db/init";
 import { generateToken, hashToken } from "@/lib/identity";
 import { setCookieHeader, isSecureRequest } from "@/lib/auth";
 import { seedIdentityDefaults } from "@/db/seed";
-
-ensureDb();
+import { returningFirst } from "@/db/helpers";
 
 export async function POST(request: Request) {
+  await ensureDb();
   const token = generateToken();
   const tokenHash = hashToken(token);
 
   // Create the identity
-  const identity = db
-    .insert(identities)
-    .values({ tokenHash })
-    .returning()
-    .get();
+  const identity = await returningFirst(
+    db
+      .insert(identities)
+      .values({ tokenHash })
+      .returning()
+  );
 
   // Seed default preferences and first sprint
-  seedIdentityDefaults(identity.id);
+  await seedIdentityDefaults(identity.id);
 
   // Set the token cookie
   const response = NextResponse.json({ token });

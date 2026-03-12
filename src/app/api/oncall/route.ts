@@ -1,20 +1,21 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
-import { onCallChanges } from "@/db/schema";
+import { onCallChanges } from "@/db/tables";
 import { ensureDb } from "@/db/init";
 import { eq, desc } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
-
-ensureDb();
+import { first, run } from "@/db/helpers";
 
 export const GET = withIdentity(async (_request: Request, identityId: number) => {
-  const latest = db
-    .select()
-    .from(onCallChanges)
-    .where(eq(onCallChanges.identityId, identityId))
-    .orderBy(desc(onCallChanges.timestamp))
-    .limit(1)
-    .get();
+  await ensureDb();
+  const latest = await first(
+    db
+      .select()
+      .from(onCallChanges)
+      .where(eq(onCallChanges.identityId, identityId))
+      .orderBy(desc(onCallChanges.timestamp))
+      .limit(1)
+  );
 
   return NextResponse.json({
     isOnCall: latest?.status ?? false,
@@ -23,21 +24,24 @@ export const GET = withIdentity(async (_request: Request, identityId: number) =>
 });
 
 export const POST = withIdentity(async (_request: Request, identityId: number) => {
-  const latest = db
-    .select()
-    .from(onCallChanges)
-    .where(eq(onCallChanges.identityId, identityId))
-    .orderBy(desc(onCallChanges.timestamp))
-    .limit(1)
-    .get();
+  await ensureDb();
+  const latest = await first(
+    db
+      .select()
+      .from(onCallChanges)
+      .where(eq(onCallChanges.identityId, identityId))
+      .orderBy(desc(onCallChanges.timestamp))
+      .limit(1)
+  );
 
   const currentStatus = latest?.status ?? false;
   const newStatus = !currentStatus;
   const now = new Date().toISOString();
 
-  db.insert(onCallChanges)
-    .values({ identityId, timestamp: now, status: newStatus })
-    .run();
+  await run(
+    db.insert(onCallChanges)
+      .values({ identityId, timestamp: now, status: newStatus })
+  );
 
   return NextResponse.json({
     isOnCall: newStatus,

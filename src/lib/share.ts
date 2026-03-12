@@ -1,7 +1,8 @@
 import crypto from "crypto";
 import { db } from "@/db/index";
-import { shareLinks } from "@/db/schema";
+import { shareLinks } from "@/db/tables";
 import { eq, and, isNull, gt } from "drizzle-orm";
+import { first } from "@/db/helpers";
 
 const SHARE_ID_LENGTH = 32;
 
@@ -36,18 +37,19 @@ export function resolveBaseUrl(request: Request): string {
 /**
  * Validate a share link by share ID. Returns the share link record if active, null otherwise.
  */
-export function validateShareLink(shareId: string) {
+export async function validateShareLink(shareId: string) {
   const now = new Date().toISOString();
-  const link = db
-    .select()
-    .from(shareLinks)
-    .where(
-      and(
-        eq(shareLinks.shareId, shareId),
-        isNull(shareLinks.revokedAt),
-        gt(shareLinks.expiresAt, now)
+  const link = await first(
+    db
+      .select()
+      .from(shareLinks)
+      .where(
+        and(
+          eq(shareLinks.shareId, shareId),
+          isNull(shareLinks.revokedAt),
+          gt(shareLinks.expiresAt, now)
+        )
       )
-    )
-    .get();
+  );
   return link ?? null;
 }

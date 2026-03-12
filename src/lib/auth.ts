@@ -48,11 +48,11 @@ function getTokenFromRequest(request: Request): string | null {
  * Resolve the identity from a request's cookie.
  * Returns { identityId } or null if not authenticated.
  */
-export function getIdentityFromRequest(request: Request): { identityId: number } | null {
+export async function getIdentityFromRequest(request: Request): Promise<{ identityId: number } | null> {
   const token = getTokenFromRequest(request);
   if (!token) return null;
 
-  const identity = resolveIdentity(token);
+  const identity = await resolveIdentity(token);
   if (!identity) return null;
 
   return { identityId: identity.id };
@@ -79,11 +79,11 @@ export function withIdentity<T extends unknown[]>(
   handler: (request: Request, identityId: number, ...args: T) => Promise<Response>
 ) {
   return async (request: Request, ...args: T): Promise<Response> => {
-    const identity = getIdentityFromRequest(request);
+    const identity = await getIdentityFromRequest(request);
     if (!identity) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    updateLastSeen(identity.identityId);
+    await updateLastSeen(identity.identityId);
     return handler(request, identity.identityId, ...args);
   };
 }

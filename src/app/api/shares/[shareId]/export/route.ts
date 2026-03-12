@@ -4,15 +4,14 @@ import { validateShareLink } from "@/lib/share";
 import { computeReportData } from "@/lib/report-data";
 import { generateTextExport } from "@/lib/export-text";
 
-ensureDb();
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ shareId: string }> }
 ) {
+  await ensureDb();
   const { shareId } = await params;
 
-  const link = validateShareLink(shareId);
+  const link = await validateShareLink(shareId);
   if (!link) {
     return NextResponse.json(
       { error: "Share link expired or invalid" },
@@ -31,7 +30,7 @@ export async function GET(
     );
   }
 
-  const result = computeReportData(link.identityId, from, to);
+  const result = await computeReportData(link.identityId, from, to);
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 500 });
   }
