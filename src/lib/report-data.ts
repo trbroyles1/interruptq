@@ -85,9 +85,12 @@ export function computeReportData(
 
   // Compute durations
   const now = nowUTC();
+  // Clamp the last activity's end to the range boundary so historical days
+  // don't bleed into future days. For today, now < rangeEnd so now wins.
+  const effectiveEnd = now < rangeEnd ? now : rangeEnd;
   const allWithDuration = allRows.map((row, i) => {
     const nextRow = allRows[i + 1];
-    const endTime = nextRow ? nextRow.timestamp : now;
+    const endTime = nextRow ? nextRow.timestamp : effectiveEnd;
 
     return {
       ...row,

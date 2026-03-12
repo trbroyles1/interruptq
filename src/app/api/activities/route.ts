@@ -77,29 +77,28 @@ export const GET = withIdentity(async (request: Request, identityId: number) => 
     : null;
   const tz = prefs?.timezone ?? "America/New_York";
 
-  let result;
+  let bounds: { start: string; end: string };
   if (date) {
-    const bounds = dayBoundsUTC(date, tz);
-    result = fetchActivitiesInRange(identityId, bounds.start, bounds.end);
+    bounds = dayBoundsUTC(date, tz);
   } else if (from && to) {
-    const rangeStart = dayBoundsUTC(from, tz).start;
-    const rangeEnd = dayBoundsUTC(to, tz).end;
-    result = fetchActivitiesInRange(identityId, rangeStart, rangeEnd);
+    bounds = { start: dayBoundsUTC(from, tz).start, end: dayBoundsUTC(to, tz).end };
   } else {
     const today = todayInTz(tz);
-    const bounds = dayBoundsUTC(today, tz);
-    result = fetchActivitiesInRange(identityId, bounds.start, bounds.end);
+    bounds = dayBoundsUTC(today, tz);
   }
 
-  const { rows, prior } = result;
+  const { rows, prior } = fetchActivitiesInRange(identityId, bounds.start, bounds.end);
   // Build full list with prior prepended (for duration computation only)
   const allRows = prior ? [prior, ...rows] : rows;
 
   // Compute durations using the full list (prior provides end boundary for first row)
   const now = nowUTC();
+  // Clamp the last activity's end to the range boundary so historical days
+  // don't bleed into future days. For today, now < rangeEnd so now wins.
+  const effectiveEnd = now < bounds.end ? now : bounds.end;
   const withDuration = allRows.map((row, i) => {
     const nextRow = allRows[i + 1];
-    const endTime = nextRow ? nextRow.timestamp : now;
+    const endTime = nextRow ? nextRow.timestamp : effectiveEnd;
 
     const durationMinutes = workingHours
       ? computeBlockDuration(row.timestamp, endTime, workingHours, tz)
