@@ -5,13 +5,10 @@
 import { getDbDriver } from "./config";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let tables: any;
-
-if (getDbDriver() === "postgres") {
-  tables = require("./schema.pg");
-} else {
-  tables = require("./schema");
-}
+const tables: any =
+  getDbDriver() === "postgres"
+    ? await import("./schema.pg")
+    : await import("./schema");
 
 export const identities = tables.identities;
 export const shareLinks = tables.shareLinks;

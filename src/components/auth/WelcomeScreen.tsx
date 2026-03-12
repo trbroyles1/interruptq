@@ -151,7 +151,7 @@ export function WelcomeScreen() {
             </div>
 
             <Button onClick={handleConfirmSaved} className="w-full">
-              I've saved my token — continue
+              I&apos;ve saved my token — continue
             </Button>
           </div>
         )}

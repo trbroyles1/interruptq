@@ -49,7 +49,7 @@ export function QuickPickGrid({
     const onCallTickets = uniqueRecent
       .filter((a) =>
         a.tickets.some((t: string) =>
-          t.toUpperCase().startsWith(onCallPrefix.toUpperCase() + "-")
+          t.toUpperCase().startsWith(`${onCallPrefix.toUpperCase()  }-`)
         )
       )
       .slice(0, quickPickOncallTicketCount);
@@ -58,7 +58,7 @@ export function QuickPickGrid({
       .filter(
         (a) =>
           !a.tickets.some((t: string) =>
-            t.toUpperCase().startsWith(onCallPrefix.toUpperCase() + "-")
+            t.toUpperCase().startsWith(`${onCallPrefix.toUpperCase()  }-`)
           ) &&
           !sprintGoals.some((g) =>
             a.text.toUpperCase().includes(g.toUpperCase())

@@ -14,11 +14,10 @@ export async function runMigrations() {
     });
   } else {
     const { migrate } = await import("drizzle-orm/better-sqlite3/migrator");
-    const Database = (await import("better-sqlite3")).default;
 
     // Foreign keys are temporarily disabled during migrations to allow
     // table recreation patterns (create-copy-drop-rename) required by SQLite.
-    const sqlite = (db as unknown as { session: { client: InstanceType<typeof Database> } })
+    const sqlite = (db as unknown as { session: { client: { pragma(s: string): void } } })
       .session.client;
     sqlite.pragma("foreign_keys = OFF");
     try {

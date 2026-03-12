@@ -1,4 +1,4 @@
-import type { ActivityWithDuration, Classification, WorkingHours } from "@/types";
+import type { ActivityWithDuration, Classification } from "@/types";
 import { toZonedDateStr } from "@/lib/timezone";
 
 export interface DayMetrics {

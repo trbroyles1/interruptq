@@ -4,7 +4,6 @@ import {
   preferences,
   sprintGoalSnapshots,
   prioritySnapshots,
-  onCallChanges,
   sprints,
 } from "@/db/tables";
 import { first, all } from "@/db/helpers";
@@ -161,7 +160,7 @@ export async function computeReportData(
       onCallMinutes += a.durationMinutes;
     }
     const hasOnCallTicket = a.tickets.some((t: string) =>
-      t.toUpperCase().startsWith(onCallPrefix.toUpperCase() + "-")
+      t.toUpperCase().startsWith(`${onCallPrefix.toUpperCase()  }-`)
     );
     if (hasOnCallTicket) {
       onCallTicketMinutes += a.durationMinutes;
