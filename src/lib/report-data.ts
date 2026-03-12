@@ -13,6 +13,33 @@ import { computeMetrics, type RangeMetrics } from "@/lib/metrics";
 import { dayBoundsUTC, nowUTC } from "@/lib/timezone";
 import type { WorkingHours } from "@/types";
 
+/** Accumulate on-call time from a list of activities with durations. */
+function computeOnCallMetrics(
+  items: readonly {
+    classification: string;
+    durationMinutes: number;
+    onCallAtTime: boolean;
+    tickets: string[];
+  }[],
+  onCallPrefix: string
+): { onCallMinutes: number; onCallTicketMinutes: number } {
+  let onCallMinutes = 0;
+  let onCallTicketMinutes = 0;
+  const prefix = onCallPrefix.toUpperCase();
+
+  for (const a of items) {
+    if (a.classification === "break") continue;
+    if (a.onCallAtTime) {
+      onCallMinutes += a.durationMinutes;
+    }
+    if (a.tickets.some((t) => t.toUpperCase().startsWith(`${prefix}-`))) {
+      onCallTicketMinutes += a.durationMinutes;
+    }
+  }
+
+  return { onCallMinutes, onCallTicketMinutes };
+}
+
 export interface ReportPayload extends RangeMetrics {
   goalChangeCount: number;
   priorityChangeCount: number;
@@ -151,21 +178,10 @@ export async function computeReportData(
 
   // On-call metrics
   const onCallPrefix = prefs?.onCallPrefix ?? "CALL";
-  let onCallMinutes = 0;
-  let onCallTicketMinutes = 0;
-
-  for (const a of withDuration) {
-    if (a.classification === "break") continue;
-    if (a.onCallAtTime) {
-      onCallMinutes += a.durationMinutes;
-    }
-    const hasOnCallTicket = a.tickets.some((t: string) =>
-      t.toUpperCase().startsWith(`${onCallPrefix.toUpperCase()  }-`)
-    );
-    if (hasOnCallTicket) {
-      onCallTicketMinutes += a.durationMinutes;
-    }
-  }
+  const { onCallMinutes, onCallTicketMinutes } = computeOnCallMetrics(
+    withDuration,
+    onCallPrefix
+  );
 
   // Sprint goal progress
   const goalProgress = sprintGoals.map((goal) => {

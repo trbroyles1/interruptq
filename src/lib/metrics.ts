@@ -44,18 +44,7 @@ export interface RangeMetrics {
   dailyBreakdown: DayMetrics[];
 }
 
-/**
- * Compute all derived metrics for a set of activities (already with durations).
- */
-export function computeMetrics(
-  activities: ActivityWithDuration[],
-  tz: string
-): RangeMetrics {
-  const sorted = [...activities].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
-
-  // Basic time by classification
+function computeTimeByClassification(sorted: ActivityWithDuration[]) {
   let greenMinutes = 0;
   let yellowMinutes = 0;
   let redMinutes = 0;
@@ -75,9 +64,14 @@ export function computeMetrics(
   const yellowPct = totalMinutes > 0 ? (yellowMinutes / totalMinutes) * 100 : 0;
   const redPct = totalMinutes > 0 ? (redMinutes / totalMinutes) * 100 : 0;
 
-  // Context switches: count of non-break activity entries, minus the first entry per day
-  // Breaks are invisible for context switch purposes
-  const nonBreakSorted = sorted.filter((a) => a.classification !== "break");
+  return { greenMinutes, yellowMinutes, redMinutes, breakMinutes, totalMinutes, greenPct, yellowPct, redPct };
+}
+
+function computeContextSwitches(
+  nonBreakSorted: ActivityWithDuration[],
+  tz: string,
+  totalMinutes: number
+) {
   const dayFirstEntries = new Set<string>();
   let totalContextSwitches = 0;
   for (const a of nonBreakSorted) {
@@ -92,14 +86,15 @@ export function computeMetrics(
   const meanTimeBetweenSwitches =
     totalContextSwitches > 0 ? totalMinutes / totalContextSwitches : totalMinutes;
 
-  // Focus time: average duration of consecutive same-color blocks
-  // Breaks interrupt continuity but are not themselves focus blocks
+  return { totalContextSwitches, meanTimeBetweenSwitches };
+}
+
+function computeFocusBlocks(sorted: ActivityWithDuration[]) {
   const focusBlocks: { classification: Classification; minutes: number }[] = [];
   let currentBlock: { classification: Classification; minutes: number } | null = null;
 
   for (const a of sorted) {
     if (a.classification === "break") {
-      // Break ends current focus block but is not itself a block
       if (currentBlock) {
         focusBlocks.push(currentBlock);
         currentBlock = null;
@@ -121,30 +116,33 @@ export function computeMetrics(
       ? blocks.reduce((s, b) => s + b.minutes, 0) / blocks.length
       : 0;
 
-  const meanFocusTime = avgFocus(focusBlocks);
-  const meanGreenFocus = avgFocus(focusBlocks.filter((b) => b.classification === "green"));
-  const meanYellowFocus = avgFocus(focusBlocks.filter((b) => b.classification === "yellow"));
-  const meanRedFocus = avgFocus(focusBlocks.filter((b) => b.classification === "red"));
-
   const maxBlock = (blocks: typeof focusBlocks) =>
     blocks.length > 0 ? Math.max(...blocks.map((b) => b.minutes)) : 0;
 
-  const longestBlock = maxBlock(focusBlocks);
-  const longestGreenBlock = maxBlock(focusBlocks.filter((b) => b.classification === "green"));
-  const longestYellowBlock = maxBlock(focusBlocks.filter((b) => b.classification === "yellow"));
-  const longestRedBlock = maxBlock(focusBlocks.filter((b) => b.classification === "red"));
+  return {
+    meanFocusTime: avgFocus(focusBlocks),
+    meanGreenFocus: avgFocus(focusBlocks.filter((b) => b.classification === "green")),
+    meanYellowFocus: avgFocus(focusBlocks.filter((b) => b.classification === "yellow")),
+    meanRedFocus: avgFocus(focusBlocks.filter((b) => b.classification === "red")),
+    longestBlock: maxBlock(focusBlocks),
+    longestGreenBlock: maxBlock(focusBlocks.filter((b) => b.classification === "green")),
+    longestYellowBlock: maxBlock(focusBlocks.filter((b) => b.classification === "yellow")),
+    longestRedBlock: maxBlock(focusBlocks.filter((b) => b.classification === "red")),
+  };
+}
 
-  // Per-activity time (exclude breaks)
+function computePerActivity(sorted: ActivityWithDuration[]) {
   const activityMap = new Map<string, number>();
   for (const a of sorted) {
     if (a.classification === "break") continue;
     activityMap.set(a.text, (activityMap.get(a.text) ?? 0) + a.durationMinutes);
   }
-  const perActivity = Array.from(activityMap.entries())
+  return Array.from(activityMap.entries())
     .map(([text, minutes]) => ({ text, minutes }))
     .sort((a, b) => b.minutes - a.minutes);
+}
 
-  // Per-ticket time (exclude breaks)
+function computePerTicket(sorted: ActivityWithDuration[]) {
   const ticketMap = new Map<string, number>();
   for (const a of sorted) {
     if (a.classification === "break") continue;
@@ -152,11 +150,12 @@ export function computeMetrics(
       ticketMap.set(ticket, (ticketMap.get(ticket) ?? 0) + a.durationMinutes);
     }
   }
-  const perTicket = Array.from(ticketMap.entries())
+  return Array.from(ticketMap.entries())
     .map(([ticket, minutes]) => ({ ticket, minutes }))
     .sort((a, b) => b.minutes - a.minutes);
+}
 
-  // Per-person time + switches (exclude breaks)
+function computePerPerson(nonBreakSorted: ActivityWithDuration[]): RangeMetrics["perPerson"] {
   const personMap = new Map<
     string,
     { minutes: number; switchCount: number; green: number; yellow: number; red: number }
@@ -177,7 +176,6 @@ export function computeMetrics(
       else if (a.classification === "yellow") entry.yellow += a.durationMinutes;
       else entry.red += a.durationMinutes;
 
-      // Count as a switch if the previous non-break activity didn't involve this person
       if (i > 0) {
         const prev = nonBreakSorted[i - 1];
         const prevTags = prev.tags.map((t) => t.toLowerCase());
@@ -189,7 +187,7 @@ export function computeMetrics(
       personMap.set(key, entry);
     }
   }
-  const perPerson = Array.from(personMap.entries())
+  return Array.from(personMap.entries())
     .map(([person, data]) => ({
       person,
       minutes: data.minutes,
@@ -199,8 +197,9 @@ export function computeMetrics(
       redMinutes: data.red,
     }))
     .sort((a, b) => b.minutes - a.minutes);
+}
 
-  // Daily breakdown
+function computeDailyBreakdown(sorted: ActivityWithDuration[], tz: string): DayMetrics[] {
   const dayMap = new Map<string, ActivityWithDuration[]>();
   for (const a of sorted) {
     const day = toZonedDateStr(a.timestamp, tz);
@@ -208,7 +207,7 @@ export function computeMetrics(
     dayMap.get(day)!.push(a);
   }
 
-  const dailyBreakdown: DayMetrics[] = Array.from(dayMap.entries())
+  return Array.from(dayMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, dayActivities]) => {
       let dGreen = 0, dYellow = 0, dRed = 0, dBreak = 0;
@@ -230,26 +229,32 @@ export function computeMetrics(
         activities: dayActivities,
       };
     });
+}
+
+/**
+ * Compute all derived metrics for a set of activities (already with durations).
+ */
+export function computeMetrics(
+  activities: ActivityWithDuration[],
+  tz: string
+): RangeMetrics {
+  const sorted = [...activities].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+  const nonBreakSorted = sorted.filter((a) => a.classification !== "break");
+
+  const time = computeTimeByClassification(sorted);
+  const switches = computeContextSwitches(nonBreakSorted, tz, time.totalMinutes);
+  const focus = computeFocusBlocks(sorted);
+  const perActivity = computePerActivity(sorted);
+  const perTicket = computePerTicket(sorted);
+  const perPerson = computePerPerson(nonBreakSorted);
+  const dailyBreakdown = computeDailyBreakdown(sorted, tz);
 
   return {
-    totalMinutes,
-    breakMinutes,
-    greenMinutes,
-    yellowMinutes,
-    redMinutes,
-    greenPct,
-    yellowPct,
-    redPct,
-    totalContextSwitches,
-    meanTimeBetweenSwitches,
-    meanFocusTime,
-    meanGreenFocus,
-    meanYellowFocus,
-    meanRedFocus,
-    longestBlock,
-    longestGreenBlock,
-    longestYellowBlock,
-    longestRedBlock,
+    ...time,
+    ...switches,
+    ...focus,
     perActivity,
     perTicket,
     perPerson,

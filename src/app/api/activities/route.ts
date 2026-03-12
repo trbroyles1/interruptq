@@ -19,6 +19,36 @@ import { withIdentity } from "@/lib/auth";
 import { dayBoundsUTC, todayInTz, nowUTC } from "@/lib/timezone";
 import type { Classification, PriorityItem, WorkingHours } from "@/types";
 
+/** Fetch sprint goals and priorities for the given sprint. */
+async function fetchSprintContext(sprintId: number): Promise<{
+  sprintGoals: string[];
+  priorities: PriorityItem[];
+}> {
+  let sprintGoals: string[] = [];
+  const goalSnapshot = await first(db
+    .select()
+    .from(sprintGoalSnapshots)
+    .where(eq(sprintGoalSnapshots.sprintId, sprintId))
+    .orderBy(desc(sprintGoalSnapshots.timestamp))
+    .limit(1));
+  if (goalSnapshot) {
+    sprintGoals = JSON.parse(goalSnapshot.goals);
+  }
+
+  let priorities: PriorityItem[] = [];
+  const prioritySnapshot = await first(db
+    .select()
+    .from(prioritySnapshots)
+    .where(eq(prioritySnapshots.sprintId, sprintId))
+    .orderBy(desc(prioritySnapshots.timestamp))
+    .limit(1));
+  if (prioritySnapshot) {
+    priorities = JSON.parse(prioritySnapshot.priorities);
+  }
+
+  return { sprintGoals, priorities };
+}
+
 /**
  * Helper: fetch activities within UTC bounds.
  * Also returns the prior activity (last before range start) separately —
@@ -175,31 +205,9 @@ export const POST = withIdentity(async (request: Request, identityId: number) =>
       .where(eq(preferences.identityId, identityId)));
     const onCallPrefix = prefs?.onCallPrefix ?? "CALL";
 
-    let sprintGoals: string[] = [];
-    if (currentSprint) {
-      const goalSnapshot = await first(db
-        .select()
-        .from(sprintGoalSnapshots)
-        .where(eq(sprintGoalSnapshots.sprintId, currentSprint.id))
-        .orderBy(desc(sprintGoalSnapshots.timestamp))
-        .limit(1));
-      if (goalSnapshot) {
-        sprintGoals = JSON.parse(goalSnapshot.goals);
-      }
-    }
-
-    let priorities: PriorityItem[] = [];
-    if (currentSprint) {
-      const prioritySnapshot = await first(db
-        .select()
-        .from(prioritySnapshots)
-        .where(eq(prioritySnapshots.sprintId, currentSprint.id))
-        .orderBy(desc(prioritySnapshots.timestamp))
-        .limit(1));
-      if (prioritySnapshot) {
-        priorities = JSON.parse(prioritySnapshot.priorities);
-      }
-    }
+    const { sprintGoals, priorities } = currentSprint
+      ? await fetchSprintContext(currentSprint.id)
+      : { sprintGoals: [] as string[], priorities: [] as PriorityItem[] };
 
     classification = classify({
       entryText: text,
