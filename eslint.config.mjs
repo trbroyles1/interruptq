@@ -50,9 +50,14 @@ const eslintConfig = defineConfig([
     },
   },
 
-  // Scripts and CLI tools may use console
+  // Scripts, CLI tools, and server-side startup hooks may use console
   {
-    files: ["scripts/**/*.{js,mjs,cjs,ts}", "src/cli/**/*.ts"],
+    files: [
+      "scripts/**/*.{js,mjs,cjs,ts}",
+      "src/cli/**/*.ts",
+      "src/vercel/**/*.ts",
+      "src/instrumentation.ts",
+    ],
     rules: {
       "no-console": "off",
       "no-template-curly-in-string": "off",
