@@ -2,6 +2,7 @@
   "name": "interrupt-q",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack -p 3099",
     "build": "next build",
