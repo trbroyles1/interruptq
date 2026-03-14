@@ -174,9 +174,9 @@ export function MultiDayView({ metrics }: MultiDayViewProps) {
           <p className="text-xs text-muted-foreground font-semibold">
             Top Activities
           </p>
-          {metrics.perActivity.slice(0, 10).map((a, i) => (
+          {metrics.perActivity.slice(0, 10).map((a) => (
             <div
-              key={i}
+              key={a.text}
               className="flex items-center justify-between text-sm py-0.5"
             >
               <span className="truncate flex-1 mr-2">{a.text}</span>
@@ -194,8 +194,8 @@ export function MultiDayView({ metrics }: MultiDayViewProps) {
           <p className="text-xs text-muted-foreground font-semibold">
             Person Impact
           </p>
-          {metrics.perPerson.map((p, i) => (
-            <div key={i} className="bg-card border border-border rounded-md p-2 text-sm">
+          {metrics.perPerson.map((p) => (
+            <div key={p.person} className="bg-card border border-border rounded-md p-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="font-medium">@{p.person}</span>
                 <span className="text-muted-foreground">
@@ -224,13 +224,13 @@ export function MultiDayView({ metrics }: MultiDayViewProps) {
           <p className="text-xs text-muted-foreground font-semibold">
             Sprint Goal Progress
           </p>
-          {metrics.goalProgress.map((g, i) => {
+          {metrics.goalProgress.map((g) => {
             const pct =
               metrics.totalMinutes > 0
                 ? (g.minutes / metrics.totalMinutes) * 100
                 : 0;
             return (
-              <div key={i} className="space-y-1">
+              <div key={g.goal} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-green-activity">{g.goal}</span>
                   <span className="text-muted-foreground">

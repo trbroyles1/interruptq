@@ -76,9 +76,9 @@ export function ShareView({
                     Sprint Goals
                   </p>
                   <ul className="space-y-1">
-                    {goals.map((goal, i) => (
+                    {goals.map((goal) => (
                       <li
-                        key={i}
+                        key={goal}
                         className="text-sm font-mono bg-muted/50 rounded px-2 py-0.5"
                       >
                         {goal}
@@ -95,9 +95,9 @@ export function ShareView({
                     Priorities
                   </p>
                   <ul className="space-y-1">
-                    {priorities.map((p, i) => (
+                    {priorities.map((p) => (
                       <li
-                        key={i}
+                        key={`${p.type}-${p.value}`}
                         className="text-sm bg-muted/50 rounded px-2 py-0.5"
                       >
                         {typeof p === "string" ? p : p.value}
