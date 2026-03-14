@@ -63,7 +63,7 @@ function TimelineView({
   activities,
   timezone,
 }: {
-  activities: { text: string; classification: Classification; timestamp: string; durationMinutes: number }[];
+  activities: { id: number; text: string; classification: Classification; timestamp: string; durationMinutes: number }[];
   timezone?: string;
 }) {
   if (activities.length === 0) {
@@ -78,7 +78,7 @@ function TimelineView({
 
   return (
     <div className="space-y-1">
-      {activities.map((a, i) => {
+      {activities.map((a) => {
         const widthPct = Math.max(5, (a.durationMinutes / maxDuration) * 100);
         const time = new Date(a.timestamp).toLocaleTimeString([], {
           hour: "2-digit",
@@ -88,7 +88,7 @@ function TimelineView({
         const colorClass = CLASSIFICATION_BG_CLASS[a.classification];
 
         return (
-          <div key={i} className="flex items-center gap-2">
+          <div key={a.id} className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground w-12 shrink-0">
               {time}
             </span>
@@ -180,9 +180,9 @@ export function AggregateView({ metrics }: { metrics: RangeMetrics }) {
           <p className="text-xs text-muted-foreground font-semibold">
             Activities by Time
           </p>
-          {metrics.perActivity.slice(0, 10).map((a, i) => (
+          {metrics.perActivity.slice(0, 10).map((a) => (
             <div
-              key={i}
+              key={a.text}
               className="flex items-center justify-between text-sm py-0.5"
             >
               <span className="truncate flex-1 mr-2">{a.text}</span>
@@ -200,9 +200,9 @@ export function AggregateView({ metrics }: { metrics: RangeMetrics }) {
           <p className="text-xs text-muted-foreground font-semibold">
             Time by Person
           </p>
-          {metrics.perPerson.map((p, i) => (
+          {metrics.perPerson.map((p) => (
             <div
-              key={i}
+              key={p.person}
               className="flex items-center justify-between text-sm py-0.5"
             >
               <span>@{p.person}</span>
