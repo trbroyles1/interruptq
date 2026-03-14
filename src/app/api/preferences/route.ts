@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { preferences } from "@/db/tables";
-import { ensureDb } from "@/db/init";
 import { eq } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
 import { first, run } from "@/db/helpers";
 import type { WorkingHours } from "@/types";
 
 export const GET = withIdentity(async (_request: Request, identityId: number) => {
-  await ensureDb();
+
   const row = await first(
     db
       .select()
@@ -25,7 +24,7 @@ export const GET = withIdentity(async (_request: Request, identityId: number) =>
 });
 
 export const PUT = withIdentity(async (request: Request, identityId: number) => {
-  await ensureDb();
+
   const body = await request.json();
   const updates: Record<string, unknown> = {};
 

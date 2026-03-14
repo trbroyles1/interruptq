@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { ensureDb } from "@/db/init";
 import { withIdentity } from "@/lib/auth";
 import { computeReportData } from "@/lib/report-data";
 import { generateTextExport } from "@/lib/export-text";
 
 export const GET = withIdentity(async (request: Request, identityId: number) => {
-  await ensureDb();
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from");
   const to = searchParams.get("to");

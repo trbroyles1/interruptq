@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { identities } from "@/db/tables";
-import { ensureDb } from "@/db/init";
 import { generateToken, hashToken } from "@/lib/identity";
 import { setCookieHeader, isSecureRequest } from "@/lib/auth";
 import { seedIdentityDefaults } from "@/db/seed";
 import { returningFirst } from "@/db/helpers";
 
 export async function POST(request: Request) {
-  await ensureDb();
   const token = generateToken();
   const tokenHash = hashToken(token);
 

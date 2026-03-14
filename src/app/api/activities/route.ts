@@ -10,7 +10,6 @@ import {
   knownTags,
 } from "@/db/tables";
 import { first, all, run, returningFirst } from "@/db/helpers";
-import { ensureDb } from "@/db/init";
 import { eq, desc, isNull, and, gte, lte } from "drizzle-orm";
 import { parseEntry } from "@/lib/parse";
 import { classify } from "@/lib/classify";
@@ -88,7 +87,7 @@ async function fetchActivitiesInRange(
 }
 
 export const GET = withIdentity(async (request: Request, identityId: number) => {
-  await ensureDb();
+
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
   const from = searchParams.get("from");
@@ -147,7 +146,7 @@ export const GET = withIdentity(async (request: Request, identityId: number) => 
 });
 
 export const POST = withIdentity(async (request: Request, identityId: number) => {
-  await ensureDb();
+
   const body = await request.json();
   const isBreak = body.isBreak === true;
 

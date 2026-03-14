@@ -11,6 +11,9 @@ const VERCEL_ENV_PREVIEW = "preview";
 export async function register() {
   applyVercelEnv();
 
+  const { ensureDb } = await import("@/db/init");
+  await ensureDb();
+
   if (
     process.env[VERCEL_ENV_KEY] === VERCEL_ENV_VALUE &&
     process.env[VERCEL_ENV_TYPE_KEY] === VERCEL_ENV_PREVIEW

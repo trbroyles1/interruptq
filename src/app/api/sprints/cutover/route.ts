@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { sprints } from "@/db/tables";
-import { ensureDb } from "@/db/init";
 import { and, eq, isNull, desc } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
 import { first, run, returningFirst } from "@/db/helpers";
 
 export const POST = withIdentity(async (request: Request, identityId: number) => {
-  await ensureDb();
   const body = await request.json().catch(() => ({}));
   const cutoverDate = body.date || new Date().toISOString().split("T")[0];
 
