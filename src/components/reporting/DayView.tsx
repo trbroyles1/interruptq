@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { CLASSIFICATION_BG_CLASS } from "@/lib/classification-colors";
 import { formatMinutes, formatPct } from "@/lib/metrics";
 import type { RangeMetrics } from "@/lib/metrics";
+import { StatCard } from "@/components/shared/StatCard";
+import type { Classification } from "@/types";
 
 interface DayViewProps {
   metrics: RangeMetrics & {
@@ -60,7 +63,7 @@ function TimelineView({
   activities,
   timezone,
 }: {
-  activities: { text: string; classification: string; timestamp: string; durationMinutes: number }[];
+  activities: { text: string; classification: Classification; timestamp: string; durationMinutes: number }[];
   timezone?: string;
 }) {
   if (activities.length === 0) {
@@ -82,14 +85,7 @@ function TimelineView({
           minute: "2-digit",
           ...(timezone ? { timeZone: timezone } : {}),
         });
-        const colorClass =
-          a.classification === "green"
-            ? "bg-green-activity"
-            : a.classification === "yellow"
-              ? "bg-yellow-activity"
-              : a.classification === "break"
-                ? "bg-gray-activity"
-                : "bg-red-activity";
+        const colorClass = CLASSIFICATION_BG_CLASS[a.classification];
 
         return (
           <div key={i} className="flex items-center gap-2">
@@ -217,33 +213,6 @@ export function AggregateView({ metrics }: { metrics: RangeMetrics }) {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  sub,
-  color,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  color: "green" | "yellow" | "red";
-}) {
-  const colorClass =
-    color === "green"
-      ? "border-green-activity/30 text-green-activity"
-      : color === "yellow"
-        ? "border-yellow-activity/30 text-yellow-activity"
-        : "border-red-activity/30 text-red-activity";
-
-  return (
-    <div className={`bg-card border rounded-md p-3 ${colorClass}`}>
-      <p className="text-xs opacity-70">{label}</p>
-      <p className="text-lg font-semibold">{value}</p>
-      <p className="text-xs opacity-70">{sub}</p>
     </div>
   );
 }
