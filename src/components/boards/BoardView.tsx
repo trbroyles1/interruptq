@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/shared/StatCard";
@@ -13,12 +13,31 @@ import type { BoardSafeMetrics, BoardParticipantMetrics, BoardAggregates } from 
 type Scope = "day" | "week" | "month" | "custom";
 
 const MONDAY_START = 1;
+const HANDLE_PREFIX = "@";
+
+function formatHandle(handle: string): string {
+  return `${HANDLE_PREFIX}${handle}`;
+}
+const SUMMARY_ANCHOR = "board-summary";
+const METRICS_ANCHOR = "board-metrics";
+const PARTICIPANT_ANCHOR_PREFIX = "participant-";
 
 const SCOPES: { key: Scope; label: string }[] = [
   { key: "day", label: "Day" },
   { key: "week", label: "Week" },
   { key: "month", label: "Month" },
   { key: "custom", label: "Custom" },
+];
+
+const BAR_SEGMENTS: {
+  key: "greenPct" | "yellowPct" | "redPct";
+  color: string;
+  label: string;
+  sub: string;
+}[] = [
+  { key: "greenPct", color: "bg-green-activity", label: "Focus time", sub: "focus time" },
+  { key: "yellowPct", color: "bg-yellow-activity", label: "Collaborative", sub: "collaborative" },
+  { key: "redPct", color: "bg-red-activity", label: "Interruptions", sub: "interruptions" },
 ];
 
 interface BoardViewProps {
@@ -56,18 +75,117 @@ function getTodayLocal(): string {
   return new Date().toISOString().split("T")[0];
 }
 
-function ParticipantCard({ participant }: { participant: BoardParticipantMetrics }) {
-  const { handle, metrics } = participant;
+function BarSegmentTooltip({ pct, sub }: { pct: number; sub: string }) {
+  return (
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none opacity-0 group-hover/segment:opacity-100 transition-opacity z-10">
+      <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg text-center whitespace-nowrap">
+        <p className="text-sm font-semibold text-foreground">{formatPct(pct)}</p>
+        <p className="text-xs text-muted-foreground">{sub}</p>
+      </div>
+    </div>
+  );
+}
+
+function ClassificationBar({ greenPct, yellowPct, redPct }: { greenPct: number; yellowPct: number; redPct: number }) {
+  const segments = BAR_SEGMENTS
+    .map((seg) => ({
+      ...seg,
+      pct: seg.key === "greenPct" ? greenPct : seg.key === "yellowPct" ? yellowPct : redPct,
+    }))
+    .filter((s) => s.pct > 0);
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-bold text-foreground">{handle}</h3>
-        {!metrics && (
-          <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
-            No data
-          </span>
+    <div className="flex h-6 w-full">
+      {segments.map((seg, i) => (
+        <div
+          key={seg.key}
+          className={`${seg.color} relative group/segment ${i === 0 ? "rounded-l-md" : ""} ${i === segments.length - 1 ? "rounded-r-md" : ""}`}
+          style={{ width: `${seg.pct}%` }}
+        >
+          <BarSegmentTooltip pct={seg.pct} sub={seg.sub} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BoardSummaryBars({
+  participants,
+  aggregates,
+}: {
+  participants: BoardParticipantMetrics[];
+  aggregates: BoardAggregates | null;
+}) {
+  return (
+    <div id={SUMMARY_ANCHOR} className="bg-card border border-border rounded-lg p-4 space-y-3">
+      <h3 className="font-bold text-foreground text-lg">Board Summary</h3>
+      <div className="space-y-2">
+        {aggregates && (
+          <div className="flex items-center gap-3">
+            <a
+              href={`#${METRICS_ANCHOR}`}
+              className="w-24 shrink-0 text-sm font-semibold text-foreground hover:underline"
+            >
+              Overall
+            </a>
+            <ClassificationBar
+              greenPct={aggregates.greenPct.mean}
+              yellowPct={aggregates.yellowPct.mean}
+              redPct={aggregates.redPct.mean}
+            />
+          </div>
         )}
+        {participants.map((p) => (
+          <div key={p.identityId} className="flex items-center gap-3">
+            <a
+              href={`#${PARTICIPANT_ANCHOR_PREFIX}${p.identityId}`}
+              className="w-24 shrink-0 text-sm text-foreground hover:underline truncate"
+            >
+              {formatHandle(p.handle)}
+            </a>
+            {p.metrics ? (
+              <ClassificationBar
+                greenPct={p.metrics.greenPct}
+                yellowPct={p.metrics.yellowPct}
+                redPct={p.metrics.redPct}
+              />
+            ) : (
+              <span className="text-xs text-muted-foreground">No data</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BackToSummary() {
+  return (
+    <a
+      href={`#${SUMMARY_ANCHOR}`}
+      className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5"
+    >
+      <ChevronUp className="h-3 w-3" />
+      Summary
+    </a>
+  );
+}
+
+function ParticipantCard({ participant }: { participant: BoardParticipantMetrics }) {
+  const { handle, metrics, identityId } = participant;
+
+  return (
+    <div id={`${PARTICIPANT_ANCHOR_PREFIX}${identityId}`} className="bg-card border border-border rounded-lg p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-foreground">{formatHandle(handle)}</h3>
+        <div className="flex items-center gap-3">
+          {!metrics && (
+            <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
+              No data
+            </span>
+          )}
+          <BackToSummary />
+        </div>
       </div>
 
       {metrics && <MetricsDetail metrics={metrics} />}
@@ -147,10 +265,13 @@ const SUMMARY_FIELDS: { key: keyof BoardSafeMetrics; label: string; format: (v: 
   { key: "priorityChangeCount", label: "Priority Changes", format: (v) => String(Math.round(v)) },
 ];
 
-function BoardSummary({ aggregates }: { aggregates: BoardAggregates }) {
+function BoardMetrics({ aggregates }: { aggregates: BoardAggregates }) {
   return (
-    <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-      <h3 className="font-bold text-foreground text-lg">Board Summary</h3>
+    <div id={METRICS_ANCHOR} className="bg-card border border-border rounded-lg p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-foreground text-lg">Board Metrics</h3>
+        <BackToSummary />
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -331,12 +452,14 @@ export function BoardView({ canonicalName, boardName, participantCount }: BoardV
 
         {!metricsLoading && participants && hasAnyData && (
           <div className="space-y-4">
+            <BoardSummaryBars participants={participants} aggregates={aggregates ?? null} />
+
             {participants.map((p) => (
               <ParticipantCard key={p.identityId} participant={p} />
             ))}
 
             {aggregates && (
-              <BoardSummary aggregates={aggregates} />
+              <BoardMetrics aggregates={aggregates} />
             )}
           </div>
         )}
