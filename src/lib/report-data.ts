@@ -194,7 +194,7 @@ export async function computeReportData(
     );
     goalChangeCount = Math.max(0, goalSnapshots.length - 1);
 
-    const latestGoals = goalSnapshots.sort(
+    const latestGoals = [...goalSnapshots].sort(
       (a, b) => b.timestamp.localeCompare(a.timestamp)
     )[0];
     if (latestGoals) {
