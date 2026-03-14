@@ -1,3 +1,5 @@
+import path from "node:path";
+import fs from "node:fs";
 import { getDbDriver, getDbUrl } from "./config";
 
 export const dbDriver = getDbDriver();
@@ -6,26 +8,16 @@ export const dbDriver = getDbDriver();
 let _db: any;
 
 if (dbDriver === "postgres") {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const postgres = require("postgres");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { drizzle } = require("drizzle-orm/postgres-js");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const schema = require("./schema.pg");
+  const postgres = (await import("postgres")).default;
+  const { drizzle } = await import("drizzle-orm/postgres-js");
+  const schema = await import("./schema.pg");
 
   const client = postgres(getDbUrl());
   _db = drizzle(client, { schema });
 } else {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Database = require("better-sqlite3");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { drizzle } = require("drizzle-orm/better-sqlite3");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const schema = require("./schema");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const path = require("node:path");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fs = require("node:fs");
+  const Database = (await import("better-sqlite3")).default;
+  const { drizzle } = await import("drizzle-orm/better-sqlite3");
+  const schema = await import("./schema");
 
   const dbPath = getDbUrl();
   const resolvedPath = path.resolve(dbPath);
