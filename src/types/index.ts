@@ -19,7 +19,54 @@ export interface Preferences {
   quickPickOncallOtherCount: number;
   weekStartDay: number; // 0=Sun, 1=Mon, ...
   timezone: string; // IANA timezone identifier, e.g. "America/New_York"
+  handle?: string | null;
 }
+
+export interface Board {
+  id: number;
+  nameCanonical: string;
+  nameDisplay: string;
+  createdAt: string;
+}
+
+export interface BoardMembership {
+  id: number;
+  boardId: number;
+  identityId: number;
+  joinedAt: string;
+}
+
+export interface BoardSafeMetrics {
+  greenPct: number;
+  yellowPct: number;
+  redPct: number;
+  totalContextSwitches: number;
+  meanTimeBetweenSwitches: number;
+  meanFocusTime: number;
+  meanGreenFocus: number;
+  meanYellowFocus: number;
+  meanRedFocus: number;
+  longestBlock: number;
+  longestGreenBlock: number;
+  longestYellowBlock: number;
+  longestRedBlock: number;
+  goalChangeCount: number;
+  priorityChangeCount: number;
+}
+
+export interface BoardParticipantMetrics {
+  handle: string;
+  identityId: number;
+  metrics: BoardSafeMetrics | null;
+}
+
+export interface BoardAggregateField {
+  mean: number;
+  min: number;
+  max: number;
+}
+
+export type BoardAggregates = Record<keyof BoardSafeMetrics, BoardAggregateField>;
 
 export interface Sprint {
   id: number;

@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 export const identities = sqliteTable("identities", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   tokenHash: text("token_hash"),
+  handle: text("handle"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -121,6 +122,39 @@ export const knownTags = sqliteTable(
     uniqueIndex("known_tags_identity_name_unique").on(
       table.identityId,
       table.name
+    ),
+  ]
+);
+
+// --- Board tables ---
+
+export const boards = sqliteTable("boards", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  nameCanonical: text("name_canonical").notNull().unique(),
+  nameDisplay: text("name_display").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const boardMemberships = sqliteTable(
+  "board_memberships",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    boardId: integer("board_id")
+      .notNull()
+      .references(() => boards.id),
+    identityId: integer("identity_id")
+      .notNull()
+      .references(() => identities.id),
+    joinedAt: text("joined_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    uniqueIndex("board_memberships_board_identity_unique").on(
+      table.boardId,
+      table.identityId
     ),
   ]
 );

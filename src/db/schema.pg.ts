@@ -10,6 +10,7 @@ export const classificationEnum = pgEnum("classification", ["green", "yellow", "
 export const identities = pgTable("identities", {
   id: serial("id").primaryKey(),
   tokenHash: text("token_hash"),
+  handle: text("handle"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`now()`),
@@ -123,6 +124,39 @@ export const knownTags = pgTable(
     uniqueIndex("known_tags_identity_name_unique").on(
       table.identityId,
       table.name
+    ),
+  ]
+);
+
+// --- Board tables ---
+
+export const boards = pgTable("boards", {
+  id: serial("id").primaryKey(),
+  nameCanonical: text("name_canonical").notNull().unique(),
+  nameDisplay: text("name_display").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`now()`),
+});
+
+export const boardMemberships = pgTable(
+  "board_memberships",
+  {
+    id: serial("id").primaryKey(),
+    boardId: integer("board_id")
+      .notNull()
+      .references(() => boards.id),
+    identityId: integer("identity_id")
+      .notNull()
+      .references(() => identities.id),
+    joinedAt: text("joined_at")
+      .notNull()
+      .default(sql`now()`),
+  },
+  (table) => [
+    uniqueIndex("board_memberships_board_identity_unique").on(
+      table.boardId,
+      table.identityId
     ),
   ]
 );

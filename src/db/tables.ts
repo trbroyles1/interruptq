@@ -19,3 +19,5 @@ export const prioritySnapshots = tables.prioritySnapshots;
 export const onCallChanges = tables.onCallChanges;
 export const knownTags = tables.knownTags;
 export const preferences = tables.preferences;
+export const boards = tables.boards;
+export const boardMemberships = tables.boardMemberships;
