@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { ensureDb } from "@/db/init";
 import { resolveIdentity } from "@/lib/identity";
 import { setCookieHeader, isSecureRequest } from "@/lib/auth";
 
 export async function POST(request: Request) {
-  await ensureDb();
   const body = await request.json();
   const token: string | undefined = body.token?.trim();
 

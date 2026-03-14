@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { sprints } from "@/db/tables";
-import { ensureDb } from "@/db/init";
 import { and, eq, isNull } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
 import { first } from "@/db/helpers";
 
 export const GET = withIdentity(async (_request: Request, identityId: number) => {
-  await ensureDb();
   const current = await first(
     db
       .select()

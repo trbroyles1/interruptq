@@ -4,9 +4,6 @@ const BANNER_LINE = "========================================";
 
 export async function seedPreviewDatabase(): Promise<void> {
   try {
-    const { ensureDb } = await import("@/db/init");
-    await ensureDb();
-
     const { seedTestData } = await import("@/lib/seed-test-data");
     const result = await seedTestData({ weeks: SEED_WEEKS });
 

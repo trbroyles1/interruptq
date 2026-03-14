@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { knownTags } from "@/db/tables";
-import { ensureDb } from "@/db/init";
 import { and, eq, like } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
 import { all, run } from "@/db/helpers";
 
 export const GET = withIdentity(async (request: Request, identityId: number) => {
-  await ensureDb();
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q");
 
@@ -40,7 +39,7 @@ export const GET = withIdentity(async (request: Request, identityId: number) => 
 });
 
 export const POST = withIdentity(async (request: Request, identityId: number) => {
-  await ensureDb();
+
   const body = await request.json();
   const name: string = body.name?.trim();
 

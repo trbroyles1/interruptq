@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { shareLinks } from "@/db/tables";
-import { ensureDb } from "@/db/init";
 import { eq, and } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
 import { first, run } from "@/db/helpers";
@@ -12,7 +11,6 @@ export const DELETE = withIdentity(
     identityId: number,
     { params }: { params: Promise<{ shareId: string }> }
   ) => {
-    await ensureDb();
     const { shareId } = await params;
 
     // Find the share link and verify ownership

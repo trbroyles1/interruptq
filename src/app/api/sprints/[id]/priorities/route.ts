@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { prioritySnapshots, sprints } from "@/db/tables";
-import { ensureDb } from "@/db/init";
 import { eq, and, desc } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
 import { first, all, returningFirst } from "@/db/helpers";
@@ -13,7 +12,7 @@ export const GET = withIdentity(
     identityId: number,
     { params }: { params: Promise<{ id: string }> }
   ) => {
-    await ensureDb();
+
     const { id } = await params;
     const sprintId = Number.parseInt(id, 10);
 
@@ -63,7 +62,7 @@ export const POST = withIdentity(
     identityId: number,
     { params }: { params: Promise<{ id: string }> }
   ) => {
-    await ensureDb();
+
     const { id } = await params;
     const sprintId = Number.parseInt(id, 10);
 

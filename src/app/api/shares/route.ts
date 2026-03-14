@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { shareLinks } from "@/db/tables";
-import { ensureDb } from "@/db/init";
 import { eq, and, isNull, gt } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
 import { generateShareId, resolveBaseUrl } from "@/lib/share";
@@ -10,7 +9,7 @@ import { all, returningFirst } from "@/db/helpers";
 const MAX_ACTIVE_LINKS = 5;
 
 export const GET = withIdentity(async (_request: Request, identityId: number) => {
-  await ensureDb();
+
   const now = new Date().toISOString();
   const links = await all(
     db
@@ -29,7 +28,7 @@ export const GET = withIdentity(async (_request: Request, identityId: number) =>
 });
 
 export const POST = withIdentity(async (request: Request, identityId: number) => {
-  await ensureDb();
+
   const now = new Date().toISOString();
 
   // Count active links

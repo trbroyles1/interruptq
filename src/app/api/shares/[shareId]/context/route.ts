@@ -7,7 +7,6 @@ import {
   onCallChanges,
   preferences,
 } from "@/db/tables";
-import { ensureDb } from "@/db/init";
 import { eq, and, isNull, desc } from "drizzle-orm";
 import { validateShareLink } from "@/lib/share";
 import { first } from "@/db/helpers";
@@ -16,7 +15,6 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ shareId: string }> }
 ) {
-  await ensureDb();
   const { shareId } = await params;
 
   const link = await validateShareLink(shareId);

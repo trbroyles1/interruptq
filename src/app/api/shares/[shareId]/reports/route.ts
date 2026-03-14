@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { ensureDb } from "@/db/init";
 import { validateShareLink } from "@/lib/share";
 import { computeReportData } from "@/lib/report-data";
 
@@ -7,7 +6,6 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ shareId: string }> }
 ) {
-  await ensureDb();
   const { shareId } = await params;
 
   const link = await validateShareLink(shareId);
