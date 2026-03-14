@@ -4,6 +4,12 @@ import useSWR, { mutate as globalMutate } from "swr";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+async function generate(): Promise<{ token: string }> {
+  const res = await fetch("/api/auth/generate", { method: "POST" });
+  const body = await res.json();
+  return { token: body.token };
+}
+
 export function useAuth() {
   const { data, error, isLoading, mutate } = useSWR("/api/auth/status", fetcher);
 
@@ -25,15 +31,6 @@ export function useAuth() {
     await globalMutate(() => true, undefined, { revalidate: false });
     await mutate();
     return { ok: true };
-  }
-
-  async function generate(): Promise<{ token: string }> {
-    const res = await fetch("/api/auth/generate", { method: "POST" });
-    const body = await res.json();
-
-    // Don't revalidate auth status yet — the WelcomeScreen needs to
-    // display the token first. Call confirmGenerated() to transition.
-    return { token: body.token };
   }
 
   async function confirmGenerated(): Promise<void> {
