@@ -42,7 +42,7 @@ export function ActivityInput({ onSubmit }: ActivityInputProps) {
       const beforeCursor = value.slice(0, cursorPos);
       const afterCursor = value.slice(cursorPos);
       const atIndex = beforeCursor.lastIndexOf("@");
-      const newValue = beforeCursor.slice(0, atIndex) + `@${tagName} ` + afterCursor;
+      const newValue = `${beforeCursor.slice(0, atIndex)  }@${tagName} ${  afterCursor}`;
       setValue(newValue);
       setShowSuggestions(false);
       setTagQuery(null);

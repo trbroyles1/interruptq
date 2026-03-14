@@ -84,7 +84,7 @@ export function computeBlockDuration(
  * Advance a "YYYY-MM-DD" string by one day.
  */
 function nextDateStr(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00Z");
+  const d = new Date(`${dateStr  }T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().split("T")[0];
 }

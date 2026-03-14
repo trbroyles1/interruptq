@@ -40,7 +40,7 @@ export function ShareLinkManager() {
 
   const truncateUrl = (url: string) => {
     if (url.length <= 50) return url;
-    return url.slice(0, 30) + "..." + url.slice(-15);
+    return `${url.slice(0, 30)  }...${  url.slice(-15)}`;
   };
 
   return (

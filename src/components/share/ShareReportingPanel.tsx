@@ -57,7 +57,7 @@ export function ShareReportingPanel({
   const [customTo, setCustomTo] = useState(today);
 
   const { from, to } = useMemo(() => {
-    const date = new Date(selectedDate + "T12:00:00");
+    const date = new Date(`${selectedDate  }T12:00:00`);
     switch (scope) {
       case "day":
         return { from: selectedDate, to: selectedDate };
@@ -83,7 +83,7 @@ export function ShareReportingPanel({
   const { metrics, isLoading } = useShareMetrics(shareId, from, to);
 
   const navigate = (direction: -1 | 1) => {
-    const date = new Date(selectedDate + "T12:00:00");
+    const date = new Date(`${selectedDate  }T12:00:00`);
     switch (scope) {
       case "day":
         date.setDate(date.getDate() + direction);

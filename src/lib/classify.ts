@@ -38,7 +38,7 @@ export function classify(input: ClassifyInput): Classification {
   });
 
   const matchesOnCallTicket = entryTickets.some((ticket) =>
-    ticket.toUpperCase().startsWith(onCallPrefix.toUpperCase() + "-")
+    ticket.toUpperCase().startsWith(`${onCallPrefix.toUpperCase()  }-`)
   );
 
   if (isOnCall) {

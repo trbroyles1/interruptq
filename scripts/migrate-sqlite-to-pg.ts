@@ -19,7 +19,7 @@ import path from "path";
 import fs from "fs";
 
 const sqlitePath = path.resolve(process.env.SQLITE_PATH || "./data/interruptq.db");
-const pgUrl = process.env.DATABASE_URL;
+const pgUrl: string = process.env.DATABASE_URL ?? "";
 
 if (!pgUrl) {
   console.error("ERROR: DATABASE_URL is required (Postgres connection string)");
