@@ -3,6 +3,11 @@
 import useSWR from "swr";
 import type { BoardParticipantMetrics, BoardAggregates } from "@/types";
 
+interface BoardMetricsResponse {
+  participants: BoardParticipantMetrics[];
+  aggregates: BoardAggregates | null;
+}
+
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
     if (!r.ok) throw new Error("Failed to load board metrics");
@@ -14,7 +19,7 @@ export function useBoardMetrics(
   from: string | null,
   to: string | null
 ) {
-  const { data, isLoading } = useSWR(
+  const { data, isLoading } = useSWR<BoardMetricsResponse>(
     from && to
       ? `/api/boards/${canonicalName}/metrics?from=${from}&to=${to}`
       : null,
@@ -22,8 +27,8 @@ export function useBoardMetrics(
   );
 
   return {
-    participants: data?.participants as BoardParticipantMetrics[] | undefined,
-    aggregates: data?.aggregates as BoardAggregates | null | undefined,
+    participants: data?.participants,
+    aggregates: data?.aggregates,
     isLoading,
   };
 }
