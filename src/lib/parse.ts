@@ -5,7 +5,7 @@
 // Match JIRA-style ticket refs like TIK-789, CALL-456 as whole tokens
 const TICKET_REGEX = /\b([A-Z][A-Z0-9]+-\d+)\b/gi;
 
-// Match @-tagged names like @Dylan, @Moksha
+// Match @-tagged names like @Robert, @Jeryl
 const TAG_REGEX = /@([A-Za-z][A-Za-z0-9_-]*)/g;
 
 export interface ParsedEntry {
@@ -53,7 +53,7 @@ export function entryMatchesTicket(entryText: string, ticket: string): boolean {
  */
 export function entryMatchesFreeText(
   entryText: string,
-  priority: string
+  priority: string,
 ): boolean {
   return entryText.trim().toLowerCase() === priority.trim().toLowerCase();
 }

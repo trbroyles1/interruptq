@@ -20,10 +20,10 @@ The app is _not_ a general-purpose time tracker. It is opinionated: it assumes t
 ### 2.1 Activity Entry
 A timestamped record of what the user is currently working on. Every new entry implicitly ends the previous one. An entry is a free-text string that may contain:
 - JIRA ticket references (e.g., `TIK-789`, `CALL-456`)
-- `@`-tagged person names (e.g., `@Moksha`, `@Dylan`)
+- `@`-tagged person names (e.g., `@Mark`, `@Robert`)
 - Free-text descriptions (e.g., `Meeting: Sprint Refinement`)
 
-Examples: `"Bugfix JAR-456"`, `"1-1 @Dylan"`, `"Research JRA-123 @Moksha"`, `"Meeting @Alice @Bob @Charlie"`
+Examples: `"Bugfix JAR-456"`, `"1-1 @Robert"`, `"Research JRA-123 @Melissa"`, `"Meeting @Alice @Bob @Charlie"`
 
 ### 2.2 Time Classification (Green / Yellow / Red)
 Every activity entry is automatically classified into one of three categories based on the user's current state:
