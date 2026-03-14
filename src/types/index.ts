@@ -19,6 +19,15 @@ export interface Preferences {
   quickPickOncallOtherCount: number;
   weekStartDay: number; // 0=Sun, 1=Mon, ...
   timezone: string; // IANA timezone identifier, e.g. "America/New_York"
+  handle?: string | null;
+}
+
+export interface BoardMembership {
+  id: number;
+  boardId: number;
+  boardNameCanonical: string;
+  boardNameDisplay: string;
+  joinedAt: string;
 }
 
 export interface Sprint {
