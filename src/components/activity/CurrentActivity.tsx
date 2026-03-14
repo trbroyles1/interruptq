@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ClassificationBadge } from "@/components/shared/ClassificationBadge";
+import { CLASSIFICATION_BG_CLASS } from "@/lib/classification-colors";
 import type { Classification } from "@/types";
 
 interface CurrentActivityProps {
@@ -49,15 +50,7 @@ export function CurrentActivity({
   return (
     <div className="flex items-center gap-4 p-4 rounded-lg bg-card border border-border">
       <div
-        className={`w-2 h-12 rounded-full ${
-          classification === "green"
-            ? "bg-green-activity"
-            : classification === "yellow"
-              ? "bg-yellow-activity"
-              : classification === "break"
-                ? "bg-gray-activity"
-                : "bg-red-activity"
-        }`}
+        className={`w-2 h-12 rounded-full ${CLASSIFICATION_BG_CLASS[classification]}`}
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">

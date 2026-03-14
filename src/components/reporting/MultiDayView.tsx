@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { formatMinutes, formatPct } from "@/lib/metrics";
 import type { RangeMetrics } from "@/lib/metrics";
+import { StatCard } from "@/components/shared/StatCard";
 
 interface MultiDayViewProps {
   metrics: RangeMetrics & {
@@ -296,33 +297,6 @@ export function MultiDayView({ metrics }: MultiDayViewProps) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  sub,
-  color,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  color: "green" | "yellow" | "red";
-}) {
-  const colorClass =
-    color === "green"
-      ? "border-green-activity/30 text-green-activity"
-      : color === "yellow"
-        ? "border-yellow-activity/30 text-yellow-activity"
-        : "border-red-activity/30 text-red-activity";
-
-  return (
-    <div className={`bg-card border rounded-md p-3 ${colorClass}`}>
-      <p className="text-xs opacity-70">{label}</p>
-      <p className="text-lg font-semibold">{value}</p>
-      <p className="text-xs opacity-70">{sub}</p>
     </div>
   );
 }
