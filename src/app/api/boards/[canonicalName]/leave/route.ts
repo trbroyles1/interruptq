@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/index";
 import { boards, boardMemberships } from "@/db/tables";
-import { all, run } from "@/db/helpers";
+import { all, first, run } from "@/db/helpers";
 import { eq, and } from "drizzle-orm";
 import { withIdentity } from "@/lib/auth";
 
@@ -9,13 +9,19 @@ export const DELETE = withIdentity(
   async (
     _request: Request,
     identityId: number,
-    { params }: { params: Promise<{ boardId: string }> }
+    { params }: { params: Promise<{ canonicalName: string }> }
   ) => {
-    const { boardId: boardIdStr } = await params;
-    const boardId = Number.parseInt(boardIdStr, 10);
+    const { canonicalName } = await params;
 
-    if (Number.isNaN(boardId)) {
-      return NextResponse.json({ error: "Invalid board ID" }, { status: 400 });
+    const board = await first(
+      db
+        .select({ id: boards.id })
+        .from(boards)
+        .where(eq(boards.nameCanonical, canonicalName))
+    );
+
+    if (!board) {
+      return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
     await run(
@@ -23,7 +29,7 @@ export const DELETE = withIdentity(
         .delete(boardMemberships)
         .where(
           and(
-            eq(boardMemberships.boardId, boardId),
+            eq(boardMemberships.boardId, board.id),
             eq(boardMemberships.identityId, identityId)
           )
         )
@@ -33,11 +39,11 @@ export const DELETE = withIdentity(
       db
         .select({ id: boardMemberships.id })
         .from(boardMemberships)
-        .where(eq(boardMemberships.boardId, boardId))
+        .where(eq(boardMemberships.boardId, board.id))
     );
 
     if (remaining.length === 0) {
-      await run(db.delete(boards).where(eq(boards.id, boardId)));
+      await run(db.delete(boards).where(eq(boards.id, board.id)));
     }
 
     return NextResponse.json({ ok: true });

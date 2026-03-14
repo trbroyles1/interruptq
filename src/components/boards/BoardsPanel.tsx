@@ -78,9 +78,9 @@ export function BoardsPanel({ handle, wrap }: BoardsPanelProps) {
     });
   };
 
-  const handleLeave = async (boardId: number) => {
+  const handleLeave = async (canonicalName: string) => {
     await wrap(async () => {
-      await leaveBoard(boardId);
+      await leaveBoard(canonicalName);
     });
   };
 
@@ -126,7 +126,7 @@ export function BoardsPanel({ handle, wrap }: BoardsPanelProps) {
                 {board.boardNameDisplay}
               </a>
               <button
-                onClick={() => handleLeave(board.boardId)}
+                onClick={() => handleLeave(board.boardNameCanonical)}
                 className="text-muted-foreground hover:text-destructive"
               >
                 <X className="h-3 w-3" />

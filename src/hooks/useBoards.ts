@@ -21,8 +21,8 @@ export function useBoards() {
     await mutate();
   };
 
-  const leaveBoard = async (boardId: number) => {
-    const res = await fetch(`/api/boards/${boardId}/leave`, {
+  const leaveBoard = async (canonicalName: string) => {
+    const res = await fetch(`/api/boards/${canonicalName}/leave`, {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to leave board");
