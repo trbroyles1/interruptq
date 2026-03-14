@@ -8,6 +8,7 @@ import { ActivityCard } from "@/components/activity/ActivityCard";
 import { SprintPanel } from "@/components/sprint/SprintPanel";
 import { GoalsList } from "@/components/sprint/GoalsList";
 import { PrioritiesList } from "@/components/sprint/PrioritiesList";
+import { BoardsPanel } from "@/components/boards/BoardsPanel";
 import { OnCallToggle } from "@/components/shared/OnCallToggle";
 import { BreakButton } from "@/components/shared/BreakButton";
 import { SaveIndicator } from "@/components/shared/SaveIndicator";
@@ -179,6 +180,13 @@ function AppView() {
                   await setPriorities(newPriorities);
                 });
               }}
+            />
+
+            <Separator />
+
+            <BoardsPanel
+              handle={preferences?.handle ?? null}
+              wrap={wrap}
             />
           </div>
         </ScrollArea>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +63,14 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
           <SheetTitle>Preferences</SheetTitle>
         </SheetHeader>
         <div className="space-y-6 mt-4">
+          {/* Handle */}
+          <HandleField
+            value={preferences.handle ?? ""}
+            onSave={(value) => onSave({ handle: value || null })}
+          />
+
+          <Separator />
+
           {/* Working Hours */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold">Working Hours</Label>
@@ -235,6 +243,45 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+const MAX_HANDLE_LENGTH = 32;
+
+function HandleField({
+  value,
+  onSave,
+}: {
+  value: string;
+  onSave: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+
+  const handleBlur = useCallback(() => {
+    const trimmed = draft.trim();
+    if (trimmed !== value) {
+      onSave(trimmed);
+    }
+  }, [draft, value, onSave]);
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="handle" className="text-sm font-semibold">
+        Handle
+      </Label>
+      <p className="text-xs text-muted-foreground">
+        Your display name on boards
+      </p>
+      <Input
+        id="handle"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={handleBlur}
+        maxLength={MAX_HANDLE_LENGTH}
+        placeholder="Enter a handle..."
+        className="h-8 text-sm"
+      />
+    </div>
   );
 }
 
