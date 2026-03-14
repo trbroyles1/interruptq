@@ -11,7 +11,7 @@ const STAT_CARD_COLOR_CLASS: Record<StatCardColor, string> = {
 interface StatCardProps {
   label: string;
   value: string;
-  sub: string;
+  sub?: string;
   color: StatCardColor;
 }
 
@@ -20,7 +20,7 @@ export function StatCard({ label, value, sub, color }: StatCardProps) {
     <div className={`bg-card border rounded-md p-3 ${STAT_CARD_COLOR_CLASS[color]}`}>
       <p className="text-xs opacity-70">{label}</p>
       <p className="text-lg font-semibold">{value}</p>
-      <p className="text-xs opacity-70">{sub}</p>
+      {sub && <p className="text-xs opacity-70">{sub}</p>}
     </div>
   );
 }

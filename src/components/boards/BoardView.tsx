@@ -35,9 +35,9 @@ const BAR_SEGMENTS: {
   label: string;
   sub: string;
 }[] = [
-  { key: "greenPct", color: "bg-green-activity", label: "Focus time", sub: "focus time" },
-  { key: "yellowPct", color: "bg-yellow-activity", label: "Collaborative", sub: "collaborative" },
-  { key: "redPct", color: "bg-red-activity", label: "Interruptions", sub: "interruptions" },
+  { key: "greenPct", color: "bg-green-activity", label: "On-target", sub: "on-target" },
+  { key: "yellowPct", color: "bg-yellow-activity", label: "Re-prioritized", sub: "re-prioritized" },
+  { key: "redPct", color: "bg-red-activity", label: "Interrupted", sub: "interrupted" },
 ];
 
 interface BoardViewProps {
@@ -198,21 +198,18 @@ function MetricsDetail({ metrics }: { metrics: BoardSafeMetrics }) {
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
         <StatCard
-          label="Green"
+          label="On-target"
           value={formatPct(metrics.greenPct)}
-          sub="focus time"
           color="green"
         />
         <StatCard
-          label="Yellow"
+          label="Re-prioritized"
           value={formatPct(metrics.yellowPct)}
-          sub="collaborative"
           color="yellow"
         />
         <StatCard
-          label="Red"
+          label="Interrupted"
           value={formatPct(metrics.redPct)}
-          sub="interruptions"
           color="red"
         />
       </div>
