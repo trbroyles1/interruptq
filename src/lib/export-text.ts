@@ -10,6 +10,30 @@ interface ExportData extends RangeMetrics {
   to: string;
 }
 
+function formatGoalProgressLines(data: ExportData): string[] {
+  if (!data.goalProgress || data.goalProgress.length === 0) return [];
+  const lines: string[] = ["SPRINT GOAL PROGRESS"];
+  for (const g of data.goalProgress) {
+    const pct =
+      data.totalMinutes > 0
+        ? formatPct((g.minutes / data.totalMinutes) * 100)
+        : "0%";
+    lines.push(`  ${g.goal}: ${formatMinutes(g.minutes)} (${pct})`);
+  }
+  lines.push("");
+  return lines;
+}
+
+function formatOnCallLines(data: ExportData): string[] {
+  if (!data.onCallMinutes || data.onCallMinutes <= 0) return [];
+  return [
+    "ON-CALL",
+    `  On-call time: ${formatMinutes(data.onCallMinutes)}`,
+    `  On-call ticket time: ${formatMinutes(data.onCallTicketMinutes ?? 0)}`,
+    "",
+  ];
+}
+
 export function generateTextExport(data: ExportData): string {
   const lines: string[] = [];
 
@@ -72,18 +96,7 @@ export function generateTextExport(data: ExportData): string {
     lines.push("");
   }
 
-  // Sprint goal progress
-  if (data.goalProgress && data.goalProgress.length > 0) {
-    lines.push("SPRINT GOAL PROGRESS");
-    for (const g of data.goalProgress) {
-      const pct =
-        data.totalMinutes > 0
-          ? formatPct((g.minutes / data.totalMinutes) * 100)
-          : "0%";
-      lines.push(`  ${g.goal}: ${formatMinutes(g.minutes)} (${pct})`);
-    }
-    lines.push("");
-  }
+  lines.push(...formatGoalProgressLines(data));
 
   // Priority drift
   if (
@@ -96,15 +109,7 @@ export function generateTextExport(data: ExportData): string {
     lines.push("");
   }
 
-  // On-call
-  if (data.onCallMinutes && data.onCallMinutes > 0) {
-    lines.push("ON-CALL");
-    lines.push(`  On-call time: ${formatMinutes(data.onCallMinutes)}`);
-    lines.push(
-      `  On-call ticket time: ${formatMinutes(data.onCallTicketMinutes ?? 0)}`
-    );
-    lines.push("");
-  }
+  lines.push(...formatOnCallLines(data));
 
   return lines.join("\n");
 }

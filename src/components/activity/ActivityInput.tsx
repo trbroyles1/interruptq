@@ -57,30 +57,31 @@ export function ActivityInput({ onSubmit }: ActivityInputProps) {
     [value],
   );
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (showSuggestions && tags.length > 0) {
-      if (e.key === "ArrowDown") {
+  const handleSuggestionKeyDown = useCallback((e: React.KeyboardEvent): boolean => {
+    switch (e.key) {
+      case "ArrowDown":
         e.preventDefault();
         setSelectedIndex((i) => Math.min(i + 1, tags.length - 1));
-        return;
-      }
-      if (e.key === "ArrowUp") {
+        return true;
+      case "ArrowUp":
         e.preventDefault();
         setSelectedIndex((i) => Math.max(i - 1, 0));
-        return;
-      }
-      if (e.key === "Tab" || e.key === "Enter") {
-        if (showSuggestions && tags.length > 0) {
-          e.preventDefault();
-          insertTag(tags[selectedIndex]);
-          return;
-        }
-      }
-      if (e.key === "Escape") {
+        return true;
+      case "Tab":
+      case "Enter":
+        e.preventDefault();
+        insertTag(tags[selectedIndex]);
+        return true;
+      case "Escape":
         setShowSuggestions(false);
-        return;
-      }
+        return true;
+      default:
+        return false;
     }
+  }, [tags, selectedIndex, insertTag]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (showSuggestions && tags.length > 0 && handleSuggestionKeyDown(e)) return;
 
     if (e.key === "Enter" && !showSuggestions) {
       e.preventDefault();
