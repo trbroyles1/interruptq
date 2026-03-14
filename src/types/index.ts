@@ -32,7 +32,8 @@ export interface Board {
 export interface BoardMembership {
   id: number;
   boardId: number;
-  identityId: number;
+  boardNameCanonical: string;
+  boardNameDisplay: string;
   joinedAt: string;
 }
 
@@ -109,47 +110,3 @@ export interface PrioritySnapshot {
   priorities: PriorityItem[];
 }
 
-export interface Board {
-  id: number;
-  nameCanonical: string;
-  nameDisplay: string;
-  createdAt: string;
-}
-
-export interface BoardMembership {
-  id: number;
-  boardId: number;
-  boardNameCanonical: string;
-  boardNameDisplay: string;
-  joinedAt: string;
-}
-
-export interface BoardSafeMetrics {
-  greenPct: number;
-  yellowPct: number;
-  redPct: number;
-  totalContextSwitches: number;
-  meanTimeBetweenSwitches: number;
-  meanFocusTime: number;
-  meanGreenFocus: number;
-  meanYellowFocus: number;
-  meanRedFocus: number;
-  longestBlock: number;
-  longestGreenBlock: number;
-  longestYellowBlock: number;
-  longestRedBlock: number;
-  goalChangeCount: number;
-  priorityChangeCount: number;
-}
-
-export interface BoardParticipantMetrics {
-  handle: string;
-  identityId: number;
-  metrics: BoardSafeMetrics | null;
-}
-
-export interface BoardAggregates {
-  mean: BoardSafeMetrics;
-  min: BoardSafeMetrics;
-  max: BoardSafeMetrics;
-}

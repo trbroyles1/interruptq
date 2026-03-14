@@ -66,7 +66,7 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
           {/* Handle */}
           <HandleField
             value={preferences.handle ?? ""}
-            onSave={(value) => onSave({ handle: value || null })}
+            onSave={(value: string) => onSave({ handle: value || null })}
           />
 
           <Separator />
