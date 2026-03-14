@@ -11,10 +11,10 @@ import { eq, and, gte, lte, desc, isNull } from "drizzle-orm";
 import { computeBlockDuration } from "@/lib/time";
 import { computeMetrics, type RangeMetrics } from "@/lib/metrics";
 import { dayBoundsUTC, nowUTC } from "@/lib/timezone";
-import type { WorkingHours } from "@/types";
+import type { WorkingHours, ActivityWithDuration } from "@/types";
 
 /** Accumulate on-call time from a list of activities with durations. */
-function computeOnCallMetrics(
+export function computeOnCallMetrics(
   items: readonly {
     classification: string;
     durationMinutes: number;
@@ -46,6 +46,42 @@ export interface ReportPayload extends RangeMetrics {
   onCallMinutes: number;
   onCallTicketMinutes: number;
   goalProgress: { goal: string; minutes: number }[];
+}
+
+export interface AssembleInput {
+  activities: ActivityWithDuration[];
+  tz: string;
+  onCallPrefix: string;
+  sprintGoals: string[];
+  goalChangeCount: number;
+  priorityChangeCount: number;
+}
+
+export function assembleReportPayload(input: AssembleInput): ReportPayload {
+  const metrics = computeMetrics(input.activities, input.tz);
+
+  const { onCallMinutes, onCallTicketMinutes } = computeOnCallMetrics(
+    input.activities,
+    input.onCallPrefix
+  );
+
+  const goalProgress = input.sprintGoals.map((goal) => {
+    const minutes = input.activities
+      .filter((a) =>
+        a.tickets.some((t: string) => t.toUpperCase() === goal.toUpperCase())
+      )
+      .reduce((sum, a) => sum + a.durationMinutes, 0);
+    return { goal, minutes };
+  });
+
+  return {
+    ...metrics,
+    goalChangeCount: input.goalChangeCount,
+    priorityChangeCount: input.priorityChangeCount,
+    onCallMinutes,
+    onCallTicketMinutes,
+    goalProgress,
+  };
 }
 
 /**
@@ -107,7 +143,7 @@ export async function computeReportData(
       .limit(1)
   );
 
-  const hasPrior = prior && !rows.find((r) => r.id === prior.id);
+  const hasPrior = prior && !rows.some((r) => r.id === prior.id);
   // Build full list with prior prepended for duration computation only.
   // The prior provides the end-boundary for computing the first in-range row's
   // "time since last activity", but the prior itself is excluded from metrics.
@@ -133,8 +169,6 @@ export async function computeReportData(
   // Exclude the prior — its duration spans outside the requested range
   // and including it inflates metrics with out-of-range working hours.
   const withDuration = hasPrior ? allWithDuration.slice(1) : allWithDuration;
-
-  const metrics = computeMetrics(withDuration, tz);
 
   // Sprint-specific data
   const currentSprint = await first(
@@ -176,32 +210,17 @@ export async function computeReportData(
     priorityChangeCount = Math.max(0, prioritySnaps.length - 1);
   }
 
-  // On-call metrics
   const onCallPrefix = prefs?.onCallPrefix ?? "CALL";
-  const { onCallMinutes, onCallTicketMinutes } = computeOnCallMetrics(
-    withDuration,
-    onCallPrefix
-  );
-
-  // Sprint goal progress
-  const goalProgress = sprintGoals.map((goal) => {
-    const minutes = withDuration
-      .filter((a) =>
-        a.tickets.some((t: string) => t.toUpperCase() === goal.toUpperCase())
-      )
-      .reduce((sum, a) => sum + a.durationMinutes, 0);
-    return { goal, minutes };
-  });
 
   return {
-    data: {
-      ...metrics,
+    data: assembleReportPayload({
+      activities: withDuration,
+      tz,
+      onCallPrefix,
+      sprintGoals,
       goalChangeCount,
       priorityChangeCount,
-      onCallMinutes,
-      onCallTicketMinutes,
-      goalProgress,
-    },
+    }),
   };
 }
 

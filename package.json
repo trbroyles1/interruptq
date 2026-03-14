@@ -13,7 +13,9 @@
     "db:push": "drizzle-kit push",
     "db:push:pg": "drizzle-kit push --config drizzle.pg.config.ts",
     "db:studio": "drizzle-kit studio",
-    "claim-data": "npx tsx src/cli/claim-data.ts"
+    "claim-data": "npx tsx src/cli/claim-data.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -48,6 +50,7 @@
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   }
 }
