@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/shared/StatCard";
@@ -215,45 +215,129 @@ function MetricsDetail({ metrics }: { metrics: BoardSafeMetrics }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <MetricItem label="Context Switches" value={String(metrics.totalContextSwitches)} />
-        <MetricItem label="Mean Time Between" value={formatMinutes(metrics.meanTimeBetweenSwitches)} />
+        <MetricItem
+          label="Context Switches"
+          value={String(metrics.totalContextSwitches)}
+          helpText="Total number of activity changes, excluding the first entry of each day."
+        />
+        <MetricItem
+          label="Mean Time Between"
+          value={formatMinutes(metrics.meanTimeBetweenSwitches)}
+          helpText="Average time between context switches."
+        />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <MetricItem label="Mean Focus" value={formatMinutes(metrics.meanFocusTime)} />
-        <MetricItem label="Green Focus" value={formatMinutes(metrics.meanGreenFocus)} />
-        <MetricItem label="Yellow Focus" value={formatMinutes(metrics.meanYellowFocus)} />
-        <MetricItem label="Red Focus" value={formatMinutes(metrics.meanRedFocus)} />
+        <MetricItem
+          label="Mean Focus"
+          value={formatMinutes(metrics.meanFocusTime)}
+          helpText="Average duration of stretches of the same type."
+        />
+        <MetricItem
+          label="Mean On-target Focus"
+          value={formatMinutes(metrics.meanGreenFocus)}
+          helpText="Average duration of on-target stretches."
+        />
+        <MetricItem
+          label="Mean Re-prioritized Focus"
+          value={formatMinutes(metrics.meanYellowFocus)}
+          helpText="Average duration of re-prioritized stretches."
+        />
+        <MetricItem
+          label="Mean Interrupted Focus"
+          value={formatMinutes(metrics.meanRedFocus)}
+          helpText="Average duration of interrupted stretches."
+        />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <MetricItem label="Longest Block" value={formatMinutes(metrics.longestBlock)} />
-        <MetricItem label="Longest Green" value={formatMinutes(metrics.longestGreenBlock)} />
-        <MetricItem label="Longest Yellow" value={formatMinutes(metrics.longestYellowBlock)} />
-        <MetricItem label="Longest Red" value={formatMinutes(metrics.longestRedBlock)} />
+        <MetricItem
+          label="Longest Block"
+          value={formatMinutes(metrics.longestBlock)}
+          helpText="Duration of the single longest stretch of any type."
+        />
+        <MetricItem
+          label="Longest On-target"
+          value={formatMinutes(metrics.longestGreenBlock)}
+          helpText="Duration of the longest on-target stretch."
+        />
+        <MetricItem
+          label="Longest Re-prioritized"
+          value={formatMinutes(metrics.longestYellowBlock)}
+          helpText="Duration of the longest re-prioritized stretch."
+        />
+        <MetricItem
+          label="Longest Interrupted"
+          value={formatMinutes(metrics.longestRedBlock)}
+          helpText="Duration of the longest interrupted stretch."
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <MetricItem label="Goal Changes" value={String(metrics.goalChangeCount)} />
-        <MetricItem label="Priority Changes" value={String(metrics.priorityChangeCount)} />
+        <MetricItem
+          label="Goal Changes"
+          value={String(metrics.goalChangeCount)}
+          helpText="Number of times the active goal was changed during the period."
+        />
+        <MetricItem
+          label="Priority Changes"
+          value={String(metrics.priorityChangeCount)}
+          helpText="Number of times task priorities were reordered during the period."
+        />
       </div>
     </div>
   );
 }
 
-function MetricItem({ label, value }: { label: string; value: string }) {
+function MetricItem({ label, value, helpText }: { label: string; value: string; helpText?: string }) {
+  const [showHelp, setShowHelp] = useState(false);
+  const helpRef = useRef<HTMLDivElement>(null);
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (helpRef.current && !helpRef.current.contains(e.target as Node)) {
+      setShowHelp(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showHelp) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showHelp, handleClickOutside]);
+
   return (
-    <div className="bg-muted/50 rounded-md px-3 py-2">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium text-foreground">{value}</p>
+    <div className="bg-muted/50 rounded-md px-3 py-2 relative">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-sm font-medium text-foreground">{value}</p>
+        </div>
+        {helpText && (
+          <div ref={helpRef} className="relative">
+            <button
+              onClick={() => setShowHelp((prev) => !prev)}
+              className="h-4 w-4 rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/40 transition-colors flex items-center justify-center mt-0.5"
+              aria-label={`Info: ${label}`}
+            >
+              <Info className="h-2.5 w-2.5 text-muted-foreground" />
+            </button>
+            {showHelp && (
+              <div className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-lg px-3 py-2 shadow-lg z-20 w-52">
+                <p className="text-xs text-muted-foreground">{helpText}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 const SUMMARY_FIELDS: { key: keyof BoardSafeMetrics; label: string; format: (v: number) => string }[] = [
-  { key: "greenPct", label: "Green %", format: formatPct },
-  { key: "yellowPct", label: "Yellow %", format: formatPct },
-  { key: "redPct", label: "Red %", format: formatPct },
+  { key: "greenPct", label: "On-target %", format: formatPct },
+  { key: "yellowPct", label: "Re-prioritized %", format: formatPct },
+  { key: "redPct", label: "Interrupted %", format: formatPct },
   { key: "totalContextSwitches", label: "Context Switches", format: (v) => String(Math.round(v)) },
   { key: "meanTimeBetweenSwitches", label: "Mean Time Between Switches", format: formatMinutes },
   { key: "meanFocusTime", label: "Mean Focus Time", format: formatMinutes },
