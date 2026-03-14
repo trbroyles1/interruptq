@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { db } from "@/db/index";
 import { shareLinks } from "@/db/tables";
 import { eq, and, isNull, gt } from "drizzle-orm";

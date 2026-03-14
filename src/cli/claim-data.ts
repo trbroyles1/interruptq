@@ -6,15 +6,15 @@
  * Usage: npx tsx src/cli/claim-data.ts --token iqt-abc123...
  */
 
-import { createInterface } from "readline";
+import { createInterface } from "node:readline";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "../db/schema";
 import { eq } from "drizzle-orm";
-import crypto from "crypto";
-import path from "path";
-import fs from "fs";
+import crypto from "node:crypto";
+import path from "node:path";
+import fs from "node:fs";
 
 const SENTINEL_IDENTITY_ID = 1;
 
