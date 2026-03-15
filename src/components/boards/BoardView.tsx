@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { ChevronLeft, ChevronRight, ChevronUp, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/shared/StatCard";
+import { AppBreadcrumb } from "@/components/shared/AppBreadcrumb";
 import { useBoardMetrics } from "@/hooks/useBoardMetrics";
 import { formatMinutes, formatPct } from "@/lib/metrics";
 import type { BoardSafeMetrics, BoardParticipantMetrics, BoardAggregates } from "@/types";
@@ -437,12 +437,12 @@ export function BoardView({ canonicalName, boardName, participantCount }: BoardV
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
         {/* Header */}
         <div>
-          <Link
-            href="/boards"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            &larr; All Boards
-          </Link>
+          <AppBreadcrumb
+            crumbs={[
+              { label: "Boards", href: "/boards" },
+              { label: boardName },
+            ]}
+          />
           <h1 className="text-2xl font-bold text-foreground mt-1">{boardName}</h1>
           <p className="text-sm text-muted-foreground">
             {participantCount} {participantCount === 1 ? "participant" : "participants"}

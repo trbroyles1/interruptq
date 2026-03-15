@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { Input } from "@/components/ui/input";
+import { AppBreadcrumb } from "@/components/shared/AppBreadcrumb";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -40,7 +41,10 @@ export default function BoardsIndexPage() {
   return (
     <div className="bg-background min-h-screen">
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-        <h1 className="text-2xl font-bold text-foreground">Boards</h1>
+        <div className="space-y-2">
+          <AppBreadcrumb crumbs={[{ label: "Boards" }]} />
+          <h1 className="text-2xl font-bold text-foreground">Boards</h1>
+        </div>
 
         <Input
           type="text"

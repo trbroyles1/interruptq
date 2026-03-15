@@ -12,6 +12,7 @@ import { BoardsPanel } from "@/components/boards/BoardsPanel";
 import { OnCallToggle } from "@/components/shared/OnCallToggle";
 import { BreakButton } from "@/components/shared/BreakButton";
 import { SaveIndicator } from "@/components/shared/SaveIndicator";
+import { AppLogo } from "@/components/shared/AppLogo";
 import { PreferencesPanel } from "@/components/preferences/PreferencesPanel";
 import { WelcomeScreen } from "@/components/auth/WelcomeScreen";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,7 +110,7 @@ function AppView() {
       {/* Sidebar */}
       <aside className="w-72 border-r border-border flex flex-col bg-card">
         <div className="p-4 flex items-center justify-between border-b border-border">
-          <h1 className="text-lg font-bold">InterruptQ</h1>
+          <AppLogo />
           <PreferencesPanel
             preferences={preferences}
             onSave={async (updates) => {
