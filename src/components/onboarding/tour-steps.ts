@@ -25,6 +25,26 @@ export const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
+    element: `#${TOUR_ID_QUICK_PICK}`,
+    popover: {
+      title: "Quick Picks",
+      description:
+        "One-click cards for your goals, priorities, and recent activities. The grid adapts when you're on-call.",
+      side: "top",
+      align: "center",
+    },
+  },
+  {
+    element: `#${TOUR_ID_SPRINT_PANEL}`,
+    popover: {
+      title: "Sprint Tracking",
+      description:
+        "Your current sprint and how many days in. When a sprint ends, use Cutover to close it and start fresh.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
     element: `#${TOUR_ID_SPRINT_GOALS}`,
     popover: {
       title: "Sprint Goals",
@@ -42,26 +62,6 @@ export const TOUR_STEPS: DriveStep[] = [
         "Your current focus list. It starts matching your goals, but you can adjust it as reality shifts. Work matching a priority (but not a goal) is re-prioritized. Everything else is interrupted.",
       side: "right",
       align: "start",
-    },
-  },
-  {
-    element: `#${TOUR_ID_SPRINT_PANEL}`,
-    popover: {
-      title: "Sprint Tracking",
-      description:
-        "Your current sprint and how many days in. When a sprint ends, use Cutover to close it and start fresh.",
-      side: "right",
-      align: "start",
-    },
-  },
-  {
-    element: `#${TOUR_ID_QUICK_PICK}`,
-    popover: {
-      title: "Quick Picks",
-      description:
-        "One-click cards for your goals, priorities, and recent activities. The grid adapts when you're on-call.",
-      side: "top",
-      align: "center",
     },
   },
   {

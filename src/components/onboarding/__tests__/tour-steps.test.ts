@@ -62,10 +62,10 @@ describe("tour-steps", () => {
   it("steps follow the expected order", () => {
     const expectedOrder = [
       TOUR_ID_ACTIVITY_INPUT,
+      TOUR_ID_QUICK_PICK,
+      TOUR_ID_SPRINT_PANEL,
       TOUR_ID_SPRINT_GOALS,
       TOUR_ID_PRIORITIES,
-      TOUR_ID_SPRINT_PANEL,
-      TOUR_ID_QUICK_PICK,
       TOUR_ID_ON_CALL,
       TOUR_ID_BREAK,
       TOUR_ID_VIEW_TABS,
