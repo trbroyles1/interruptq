@@ -60,6 +60,9 @@ export const PUT = withIdentity(async (request: Request, identityId: number) => 
   if (body.timezone !== undefined) {
     updates.timezone = body.timezone;
   }
+  if (body.tourCompleted !== undefined) {
+    updates.tourCompleted = body.tourCompleted;
+  }
 
   if (body.handle !== undefined) {
     const handle =
