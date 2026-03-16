@@ -47,7 +47,7 @@ export function ShareLinkManager() {
     <Dialog>
       <DialogTrigger
         render={
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
+          <Button id="share-button" variant="ghost" size="sm" className="h-7 text-xs gap-1">
             <Share2 className="h-3 w-3" />
             Share
           </Button>

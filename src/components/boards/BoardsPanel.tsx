@@ -113,7 +113,7 @@ export function BoardsPanel({ handle, wrap }: BoardsPanelProps) {
 
   if (!editing) {
     return (
-      <div className="space-y-2">
+      <div id="boards-panel" className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase text-muted-foreground">
             Boards
@@ -145,7 +145,7 @@ export function BoardsPanel({ handle, wrap }: BoardsPanelProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div id="boards-panel" className="space-y-2">
       <h3 className="text-xs font-semibold uppercase text-muted-foreground">
         Edit Boards
       </h3>
