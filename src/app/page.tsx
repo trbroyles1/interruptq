@@ -83,7 +83,7 @@ function AppView() {
   });
 
   useEffect(() => {
-    if (preferences && preferences.tourCompleted === false) {
+    if (preferences?.tourCompleted === false) {
       setShowWelcome(true);
     }
   }, [preferences]);

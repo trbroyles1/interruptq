@@ -18,9 +18,9 @@ import { useAuth } from "@/hooks/useAuth";
 import type { Preferences, DayOfWeek, WorkingHours } from "@/types";
 
 interface PreferencesPanelProps {
-  preferences: Preferences | null;
-  onSave: (updates: Partial<Preferences>) => Promise<void>;
-  onReplayTour?: () => void;
+  readonly preferences: Preferences | null;
+  readonly onSave: (updates: Partial<Preferences>) => Promise<void>;
+  readonly onReplayTour?: () => void;
 }
 
 const DAY_LABELS: Record<DayOfWeek, string> = {

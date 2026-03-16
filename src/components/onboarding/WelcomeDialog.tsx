@@ -11,9 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 
 interface WelcomeDialogProps {
-  open: boolean;
-  onTakeTour: () => void;
-  onSkip: () => void;
+  readonly open: boolean;
+  readonly onTakeTour: () => void;
+  readonly onSkip: () => void;
 }
 
 const CLASSIFICATIONS = [
