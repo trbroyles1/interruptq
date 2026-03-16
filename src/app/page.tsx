@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityInput } from "@/components/activity/ActivityInput";
 import { CurrentActivity } from "@/components/activity/CurrentActivity";
 import { QuickPickGrid } from "@/components/activity/QuickPickGrid";
@@ -28,7 +28,7 @@ import { ReportingPanel } from "@/components/reporting/ReportingPanel";
 import { ShareLinkManager } from "@/components/share/ShareLinkManager";
 import { todayInTz } from "@/lib/timezone";
 import { WelcomeDialog } from "@/components/onboarding";
-import { useOnboardingTour } from "@/hooks/useOnboardingTour";
+import { useTourOrchestration } from "@/hooks/useTourOrchestration";
 
 export default function Home() {
   const { connected, isLoading: authLoading } = useAuth();
@@ -74,35 +74,13 @@ function AppView() {
 
   const [activeView, setActiveView] = useState<"timeline" | "report">("timeline");
   const [quickPickCollapsed, setQuickPickCollapsed] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
 
-  const { startTour } = useOnboardingTour({
-    onComplete: () => {
-      void updatePreferences({ tourCompleted: true });
-    },
-  });
-
-  useEffect(() => {
-    if (preferences?.tourCompleted === false) {
-      setShowWelcome(true);
-    }
-  }, [preferences]);
-
-  const handleTakeTour = useCallback(() => {
-    setShowWelcome(false);
-    setQuickPickCollapsed(false);
-    setTimeout(() => startTour(), 300);
-  }, [startTour]);
-
-  const handleSkipTour = useCallback(async () => {
-    setShowWelcome(false);
-    await updatePreferences({ tourCompleted: true });
-  }, [updatePreferences]);
-
-  const handleReplayTour = useCallback(() => {
-    setQuickPickCollapsed(false);
-    setTimeout(() => startTour(), 300);
-  }, [startTour]);
+  const { showWelcome, handleTakeTour, handleSkipTour, handleReplayTour } =
+    useTourOrchestration({
+      tourCompleted: preferences?.tourCompleted,
+      updatePreferences,
+      beforeStart: () => setQuickPickCollapsed(false),
+    });
 
   const handleSubmit = useCallback(
     async (text: string) => {
