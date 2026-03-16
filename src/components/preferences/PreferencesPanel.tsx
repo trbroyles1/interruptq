@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Settings, LogOut, Navigation } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { Preferences, DayOfWeek, WorkingHours } from "@/types";
@@ -22,6 +22,9 @@ interface PreferencesPanelProps {
   readonly onSave: (updates: Partial<Preferences>) => Promise<void>;
   readonly onReplayTour?: () => void;
 }
+
+const SECTION_LABEL_SCHEDULE = "Schedule";
+const SECTION_LABEL_GENERAL = "General";
 
 const DAY_LABELS: Record<DayOfWeek, string> = {
   mon: "Monday",
@@ -52,29 +55,37 @@ export function PreferencesPanel({ preferences, onSave, onReplayTour }: Preferen
     await onSave({ workingHours: wh });
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) setConfirmDisconnect(false);
+  };
+
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger
-        render={<Button id="preferences-button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger
+        render={
+          <Button
+            id="preferences-button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            aria-label="Preferences"
+          />
+        }
       >
         <Settings className="h-4 w-4" />
-      </SheetTrigger>
-      <SheetContent className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Preferences</SheetTitle>
-        </SheetHeader>
-        <div className="space-y-6 mt-4">
-          {/* Handle */}
-          <HandleField
-            value={preferences.handle ?? ""}
-            onSave={(value: string) => onSave({ handle: value || null })}
-          />
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Preferences</DialogTitle>
+        </DialogHeader>
 
-          <Separator />
-
-          {/* Working Hours */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+          {/* Left column: Schedule */}
           <div className="space-y-3">
-            <Label className="text-sm font-semibold">Working Hours</Label>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              {SECTION_LABEL_SCHEDULE}
+            </h3>
             {DAY_ORDER.map((day) => {
               const schedule = preferences.workingHours[day];
               return (
@@ -84,6 +95,7 @@ export function PreferencesPanel({ preferences, onSave, onReplayTour }: Preferen
                     onCheckedChange={(v) =>
                       handleWorkingHoursChange(day, "enabled", v)
                     }
+                    aria-label={DAY_LABELS[day]}
                   />
                   <span className="text-sm w-20">{DAY_LABELS[day]}</span>
                   {schedule.enabled && (
@@ -112,158 +124,155 @@ export function PreferencesPanel({ preferences, onSave, onReplayTour }: Preferen
             })}
           </div>
 
-          {/* On-Call Prefix */}
-          <div className="space-y-2">
-            <Label htmlFor="oncall-prefix" className="text-sm font-semibold">
-              On-Call Ticket Prefix
-            </Label>
-            <Input
-              id="oncall-prefix"
-              value={preferences.onCallPrefix}
-              onChange={(e) => onSave({ onCallPrefix: e.target.value })}
-              className="h-8 text-sm"
+          {/* Right column: General */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              {SECTION_LABEL_GENERAL}
+            </h3>
+
+            {/* Handle */}
+            <HandleField
+              value={preferences.handle ?? ""}
+              onSave={(value: string) => onSave({ handle: value || null })}
             />
-          </div>
 
-          {/* Quick Pick Counts */}
-          <div className="space-y-3">
-            <Label className="text-sm font-semibold">Quick-Pick Counts</Label>
+            {/* On-Call Prefix */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Recent (normal)</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={preferences.quickPickRecentCount}
-                  onChange={(e) =>
-                    onSave({ quickPickRecentCount: Number.parseInt(e.target.value) || 10 })
-                  }
-                  className="h-7 w-16 text-sm text-center"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">On-call tickets</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={preferences.quickPickOncallTicketCount}
-                  onChange={(e) =>
-                    onSave({
-                      quickPickOncallTicketCount: Number.parseInt(e.target.value) || 5,
-                    })
-                  }
-                  className="h-7 w-16 text-sm text-center"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Recent other (on-call)</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={preferences.quickPickOncallOtherCount}
-                  onChange={(e) =>
-                    onSave({
-                      quickPickOncallOtherCount: Number.parseInt(e.target.value) || 5,
-                    })
-                  }
-                  className="h-7 w-16 text-sm text-center"
-                />
-              </div>
+              <Label htmlFor="oncall-prefix" className="text-sm font-semibold">
+                On-Call Ticket Prefix
+              </Label>
+              <Input
+                id="oncall-prefix"
+                value={preferences.onCallPrefix}
+                onChange={(e) => onSave({ onCallPrefix: e.target.value })}
+                className="h-8 text-sm"
+              />
             </div>
-          </div>
 
-          {/* Week Start Day */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">Week Start Day</Label>
-            <select
-              value={preferences.weekStartDay}
-              onChange={(e) =>
-                onSave({ weekStartDay: Number.parseInt(e.target.value) })
-              }
-              className="h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value={0}>Sunday</option>
-              <option value={1}>Monday</option>
-              <option value={6}>Saturday</option>
-            </select>
-          </div>
-
-          {/* Timezone */}
-          <TimezoneSelect
-            value={preferences.timezone}
-            onChange={(tz) => onSave({ timezone: tz })}
-          />
-
-          <Separator />
-
-          {/* Guided Tour */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold flex items-center gap-2">
-              <Navigation className="h-4 w-4" />
-              Guided Tour
-            </Label>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setOpen(false);
-                onReplayTour?.();
-              }}
-            >
-              Replay onboarding tour
-            </Button>
-          </div>
-
-          <Separator />
-
-          {/* Disconnect */}
-          <div className="space-y-3">
-            <Label className="text-sm font-semibold flex items-center gap-2">
-              <LogOut className="h-4 w-4" />
-              Session
-            </Label>
-            {!confirmDisconnect ? (
-              <Button
-                variant="outline"
-                className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
-                onClick={() => setConfirmDisconnect(true)}
-              >
-                Disconnect
-              </Button>
-            ) : (
+            {/* Quick Pick Counts */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Quick-Pick Counts</Label>
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  Are you sure? You will need your token to reconnect.
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="flex-1"
-                    onClick={async () => {
-                      await disconnect();
-                    }}
-                  >
-                    Confirm
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => setConfirmDisconnect(false)}
-                  >
-                    Cancel
-                  </Button>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Recent (normal)</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={preferences.quickPickRecentCount}
+                    onChange={(e) =>
+                      onSave({ quickPickRecentCount: Number.parseInt(e.target.value) || 10 })
+                    }
+                    className="h-7 w-16 text-sm text-center"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">On-call tickets</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={preferences.quickPickOncallTicketCount}
+                    onChange={(e) =>
+                      onSave({
+                        quickPickOncallTicketCount: Number.parseInt(e.target.value) || 5,
+                      })
+                    }
+                    className="h-7 w-16 text-sm text-center"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Recent other (on-call)</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={preferences.quickPickOncallOtherCount}
+                    onChange={(e) =>
+                      onSave({
+                        quickPickOncallOtherCount: Number.parseInt(e.target.value) || 5,
+                      })
+                    }
+                    className="h-7 w-16 text-sm text-center"
+                  />
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Week Start Day */}
+            <div className="space-y-2">
+              <Label htmlFor="week-start-day" className="text-sm font-semibold">
+                Week Start Day
+              </Label>
+              <select
+                id="week-start-day"
+                value={preferences.weekStartDay}
+                onChange={(e) =>
+                  onSave({ weekStartDay: Number.parseInt(e.target.value) })
+                }
+                className="h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value={0}>Sunday</option>
+                <option value={1}>Monday</option>
+                <option value={6}>Saturday</option>
+              </select>
+            </div>
+
+            {/* Timezone */}
+            <TimezoneSelect
+              value={preferences.timezone}
+              onChange={(tz) => onSave({ timezone: tz })}
+            />
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+
+        <DialogFooter className="sm:justify-between sm:items-center">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setOpen(false);
+              onReplayTour?.();
+            }}
+          >
+            <Navigation className="h-4 w-4 mr-2" />
+            Replay onboarding tour
+          </Button>
+
+          {!confirmDisconnect ? (
+            <Button
+              variant="outline"
+              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={() => setConfirmDisconnect(true)}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Disconnect
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                Are you sure? You will need your token to reconnect.
+              </span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={async () => {
+                  await disconnect();
+                }}
+              >
+                Confirm
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmDisconnect(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

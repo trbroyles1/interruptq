@@ -1,4 +1,4 @@
-import type { DayOfWeek, DaySchedule, WorkingHours, ActivityWithDuration } from "@/types";
+import type { DayOfWeek, DaySchedule, WorkingHours, ActivityWithDuration, Preferences } from "@/types";
 
 const WEEKDAYS: DayOfWeek[] = ["mon", "tue", "wed", "thu", "fri"];
 const WEEKEND: DayOfWeek[] = ["sat", "sun"];
@@ -35,4 +35,23 @@ export function makeActivity(
   overrides?: Partial<ActivityWithDuration>,
 ): ActivityWithDuration {
   return { ...DEFAULT_ACTIVITY, ...overrides };
+}
+
+const DEFAULT_PREFERENCES: Preferences = {
+  id: 1,
+  workingHours: makeWorkingHours(),
+  onCallPrefix: "OC",
+  quickPickRecentCount: 10,
+  quickPickOncallTicketCount: 5,
+  quickPickOncallOtherCount: 5,
+  weekStartDay: 1,
+  timezone: "America/New_York",
+  tourCompleted: true,
+  handle: "testuser",
+};
+
+export function makePreferences(
+  overrides?: Partial<Preferences>,
+): Preferences {
+  return { ...DEFAULT_PREFERENCES, ...overrides };
 }
