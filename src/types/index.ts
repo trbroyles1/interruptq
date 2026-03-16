@@ -19,6 +19,7 @@ export interface Preferences {
   quickPickOncallOtherCount: number;
   weekStartDay: number; // 0=Sun, 1=Mon, ...
   timezone: string; // IANA timezone identifier, e.g. "America/New_York"
+  tourCompleted: boolean;
   handle?: string | null;
 }
 
