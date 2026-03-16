@@ -1,6 +1,6 @@
 import { db, dbDriver } from "./index";
 import path from "node:path";
-import { MIGRATION_URL_KEY } from "@/vercel/env";
+import { MIGRATION_URL_KEY } from "./config";
 
 /**
  * Apply pending Drizzle migrations.
