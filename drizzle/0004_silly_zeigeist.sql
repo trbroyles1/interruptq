@@ -1,0 +1,1 @@
+ALTER TABLE `preferences` ADD `tour_completed` integer DEFAULT false NOT NULL;

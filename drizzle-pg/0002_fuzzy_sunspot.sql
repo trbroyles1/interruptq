@@ -1,0 +1,1 @@
+ALTER TABLE "preferences" ADD COLUMN "tour_completed" boolean DEFAULT false NOT NULL;

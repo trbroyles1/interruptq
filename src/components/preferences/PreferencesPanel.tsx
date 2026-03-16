@@ -13,13 +13,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, Navigation } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { Preferences, DayOfWeek, WorkingHours } from "@/types";
 
 interface PreferencesPanelProps {
   preferences: Preferences | null;
   onSave: (updates: Partial<Preferences>) => Promise<void>;
+  onReplayTour?: () => void;
 }
 
 const DAY_LABELS: Record<DayOfWeek, string> = {
@@ -34,7 +35,7 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
 
 const DAY_ORDER: DayOfWeek[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
-export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps) {
+export function PreferencesPanel({ preferences, onSave, onReplayTour }: PreferencesPanelProps) {
   const [open, setOpen] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const { disconnect } = useAuth();
@@ -195,6 +196,26 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
             value={preferences.timezone}
             onChange={(tz) => onSave({ timezone: tz })}
           />
+
+          <Separator />
+
+          {/* Guided Tour */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <Navigation className="h-4 w-4" />
+              Guided Tour
+            </Label>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setOpen(false);
+                onReplayTour?.();
+              }}
+            >
+              Replay onboarding tour
+            </Button>
+          </div>
 
           <Separator />
 

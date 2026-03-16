@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityInput } from "@/components/activity/ActivityInput";
 import { CurrentActivity } from "@/components/activity/CurrentActivity";
 import { QuickPickGrid } from "@/components/activity/QuickPickGrid";
@@ -27,6 +27,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ReportingPanel } from "@/components/reporting/ReportingPanel";
 import { ShareLinkManager } from "@/components/share/ShareLinkManager";
 import { todayInTz } from "@/lib/timezone";
+import { WelcomeDialog } from "@/components/onboarding";
+import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 
 export default function Home() {
   const { connected, isLoading: authLoading } = useAuth();
@@ -72,6 +74,35 @@ function AppView() {
 
   const [activeView, setActiveView] = useState<"timeline" | "report">("timeline");
   const [quickPickCollapsed, setQuickPickCollapsed] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  const { startTour } = useOnboardingTour({
+    onComplete: async () => {
+      await updatePreferences({ tourCompleted: true });
+    },
+  });
+
+  useEffect(() => {
+    if (preferences && preferences.tourCompleted === false) {
+      setShowWelcome(true);
+    }
+  }, [preferences]);
+
+  const handleTakeTour = useCallback(() => {
+    setShowWelcome(false);
+    setQuickPickCollapsed(false);
+    setTimeout(() => startTour(), 300);
+  }, [startTour]);
+
+  const handleSkipTour = useCallback(async () => {
+    setShowWelcome(false);
+    await updatePreferences({ tourCompleted: true });
+  }, [updatePreferences]);
+
+  const handleReplayTour = useCallback(() => {
+    setQuickPickCollapsed(false);
+    setTimeout(() => startTour(), 300);
+  }, [startTour]);
 
   const handleSubmit = useCallback(
     async (text: string) => {
@@ -118,6 +149,7 @@ function AppView() {
                 await updatePreferences(updates);
               });
             }}
+            onReplayTour={handleReplayTour}
           />
         </div>
 
@@ -303,6 +335,13 @@ function AppView() {
 
       {/* Save Indicator */}
       <SaveIndicator status={saveStatus} />
+
+      {/* Onboarding Tour */}
+      <WelcomeDialog
+        open={showWelcome}
+        onTakeTour={handleTakeTour}
+        onSkip={handleSkipTour}
+      />
     </div>
   );
 }
