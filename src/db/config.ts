@@ -1,8 +1,5 @@
 export type DbDriver = "sqlite" | "postgres";
 
-/** Env var consulted for a dedicated migration connection string (e.g. non-pooled). */
-export const MIGRATION_URL_KEY = "MIGRATION_DATABASE_URL";
-
 export function getDbDriver(): DbDriver {
   const driver = process.env.DB_DRIVER || "sqlite";
   if (driver !== "sqlite" && driver !== "postgres") {

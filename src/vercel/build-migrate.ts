@@ -2,12 +2,9 @@
  * Runs database migrations as part of the Vercel build step.
  *
  * Invoked via `tsx` in the `build:vercel` npm script, after `next build`.
- * Uses the non-pooling Supabase connection (POSTGRES_URL_NON_POOLING) so
- * DDL statements aren't blocked by PgBouncer.
- *
  * This replaces running migrations at serverless cold-start time, which was
  * unreliable due to intermittent TCP connection timeouts from Lambda to
- * Supabase's direct Postgres endpoint.
+ * Supabase's Postgres endpoint.
  */
 
 import { applyVercelEnv } from "./env";
