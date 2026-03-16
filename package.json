@@ -50,6 +50,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.4.0",
     "@types/react": "^19.2.14",
+    "@vitest/coverage-v8": "^4.1.0",
     "drizzle-kit": "^0.31.9",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.1.6",
