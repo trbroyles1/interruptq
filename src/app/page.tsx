@@ -77,8 +77,8 @@ function AppView() {
   const [showWelcome, setShowWelcome] = useState(false);
 
   const { startTour } = useOnboardingTour({
-    onComplete: async () => {
-      await updatePreferences({ tourCompleted: true });
+    onComplete: () => {
+      void updatePreferences({ tourCompleted: true });
     },
   });
 
