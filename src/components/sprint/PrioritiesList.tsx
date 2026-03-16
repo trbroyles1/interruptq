@@ -63,7 +63,7 @@ export function PrioritiesList({
 
   if (!editing) {
     return (
-      <div className="space-y-2">
+      <div id="priorities-panel" className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase text-muted-foreground">
             Priorities
@@ -104,7 +104,7 @@ export function PrioritiesList({
   }
 
   return (
-    <div className="space-y-2">
+    <div id="priorities-panel" className="space-y-2">
       <h3 className="text-xs font-semibold uppercase text-muted-foreground">
         Edit Priorities
       </h3>

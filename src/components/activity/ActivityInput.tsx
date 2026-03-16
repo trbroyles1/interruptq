@@ -101,7 +101,7 @@ export function ActivityInput({ onSubmit }: ActivityInputProps) {
   }, []);
 
   return (
-    <div className="relative">
+    <div id="activity-input" className="relative">
       <Input
         ref={inputRef}
         value={value}

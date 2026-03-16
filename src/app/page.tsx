@@ -243,7 +243,7 @@ function AppView() {
 
         {/* Activity Timeline / Reports */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+          <div id="view-tabs" className="flex items-center gap-2 px-4 pt-3 pb-2">
             <button
               onClick={() => setActiveView("timeline")}
               className={`text-sm font-medium px-3 py-1 rounded-md transition-colors ${

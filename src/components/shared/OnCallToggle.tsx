@@ -11,7 +11,7 @@ interface OnCallToggleProps {
 
 export function OnCallToggle({ isOnCall, onToggle }: OnCallToggleProps) {
   return (
-    <div className="flex items-center gap-3">
+    <div id="on-call-toggle" className="flex items-center gap-3">
       <Switch
         checked={isOnCall}
         onCheckedChange={onToggle}

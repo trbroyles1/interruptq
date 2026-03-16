@@ -11,6 +11,7 @@ interface BreakButtonProps {
 export function BreakButton({ isOnBreak, onBreak }: BreakButtonProps) {
   return (
     <button
+      id="break-button"
       onClick={onBreak}
       disabled={isOnBreak}
       className={cn(

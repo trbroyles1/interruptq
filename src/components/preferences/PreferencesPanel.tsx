@@ -54,7 +54,7 @@ export function PreferencesPanel({ preferences, onSave }: PreferencesPanelProps)
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
-        render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0" />}
+        render={<Button id="preferences-button" variant="ghost" size="sm" className="h-8 w-8 p-0" />}
       >
         <Settings className="h-4 w-4" />
       </SheetTrigger>

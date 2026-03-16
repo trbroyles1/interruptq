@@ -72,7 +72,7 @@ export function QuickPickGrid({
       .slice(0, quickPickOncallOtherCount);
 
     return (
-      <div className="space-y-4">
+      <div id="quick-pick-grid" className="space-y-4">
         {onCallTickets.length > 0 && (
           <Section title="Recent On-Call Tickets">
             {onCallTickets.map((a) => (
@@ -141,7 +141,7 @@ export function QuickPickGrid({
     .slice(0, quickPickRecentCount);
 
   return (
-    <div className="space-y-4">
+    <div id="quick-pick-grid" className="space-y-4">
       {sprintGoals.length > 0 && (
         <Section title="Sprint Goals">
           {sprintGoals.map((goal) => (

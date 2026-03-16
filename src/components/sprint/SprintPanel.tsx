@@ -37,7 +37,7 @@ export function SprintPanel({ sprint, timezone, onCutover }: SprintPanelProps) {
   };
 
   if (!sprint) {
-    return <div className="text-sm text-muted-foreground">No active sprint</div>;
+    return <div id="sprint-panel" className="text-sm text-muted-foreground">No active sprint</div>;
   }
 
   const elapsedDays = Math.floor(
@@ -45,7 +45,7 @@ export function SprintPanel({ sprint, timezone, onCutover }: SprintPanelProps) {
   );
 
   return (
-    <div className="space-y-2">
+    <div id="sprint-panel" className="space-y-2">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold">Sprint {sprint.ordinal}</h3>
